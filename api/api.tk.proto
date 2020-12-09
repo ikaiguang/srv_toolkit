@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package tkpb;
+
+option go_package = "github.com/ikaiguang/srv_toolkit/api;tkpb";
+
+import "google/protobuf/any.proto";
+
+/**
+ *
+ * @apiDefine response 响应
+ *
+ * @apiSuccess (响应) {int32} code 状态码
+ * @apiSuccess (响应) {msg} msg 响应描述
+ * @apiSuccess (响应) {msg} detail 消息详情
+ *
+ * @apiSuccess (响应) {google.protobuf.Any} data 响应数据
+ *
+ */
+
+// response resp with google/protobuf/any.proto
+message response {
+  int32 code = 1; // code
+  string msg = 2; // 响应描述
+  string detail = 3; // 消息详情
+
+  google.protobuf.Any data = 4; // data
+}

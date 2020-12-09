@@ -1,0 +1,20 @@
+.idea
+.vscode
+*.exe
+
+# 附件
+attachment
+
+# 运行时
+runtime
+
+# main
+main
+
+# 测试文件
+test.go
+
+# cmd
+cmd
+cmd.go
+cmd.exe
