@@ -8,7 +8,7 @@ import "google/protobuf/any.proto";
 
 /**
  *
- * @apiDefine response 响应
+ * @apiDefine Response 响应
  *
  * @apiSuccess (响应) {int32} code 状态码
  * @apiSuccess (响应) {msg} msg 响应描述
@@ -18,8 +18,8 @@ import "google/protobuf/any.proto";
  *
  */
 
-// response resp with google/protobuf/any.proto
-message response {
+// Response resp with google/protobuf/any.proto
+message Response {
   int32 code = 1; // code
   string msg = 2; // 响应描述
   string detail = 3; // 消息详情
