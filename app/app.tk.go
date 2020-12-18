@@ -1,13 +1,12 @@
-package apptk
+package tkapp
 
 import (
 	"encoding/json"
 	"github.com/go-kratos/kratos/pkg/net/http/blademaster"
-	"github.com/golang/protobuf/proto"
+	"github.com/gogo/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
 	tkpb "github.com/ikaiguang/srv_toolkit/api"
-	etk "github.com/ikaiguang/srv_toolkit/error"
-	tk "github.com/ikaiguang/srv_toolkit/toolkit"
+	tke "github.com/ikaiguang/srv_toolkit/error"
 	"github.com/pkg/errors"
 	"net/http"
 )
@@ -41,8 +40,8 @@ func PB(ctx *blademaster.Context, data proto.Message) {
 		return
 	}
 	resp := &tkpb.Response{
-		Code: etk.SUCCESS.Code(),
-		Msg:  etk.Msg(etk.SUCCESS),
+		Code: tke.Success.Code(),
+		Msg:  tke.Msg(tke.Success),
 		Data: anyData,
 	}
 
@@ -98,8 +97,8 @@ func JSON(ctx *blademaster.Context, data proto.Message) {
 		return
 	}
 	resp := &tkpb.Response{
-		Code: etk.SUCCESS.Code(),
-		Msg:  etk.Msg(etk.SUCCESS),
+		Code: tke.Success.Code(),
+		Msg:  tke.Msg(tke.Success),
 		Data: anyData,
 	}
 
@@ -129,8 +128,8 @@ func JSONOmitempty(ctx *blademaster.Context, data proto.Message) {
 	}
 
 	resp := &tkpb.Response{
-		Code: etk.SUCCESS.Code(),
-		Msg:  etk.Msg(etk.SUCCESS),
+		Code: tke.Success.Code(),
+		Msg:  tke.Msg(tke.Success),
 		Data: anyData,
 	}
 
@@ -186,7 +185,7 @@ func responseErrorJSON(ctx *blademaster.Context, err error) {
 func errorRes(err error) (resp *tkpb.Response) {
 	resp = errorInit(err)
 
-	s, ok := etk.FromError(err)
+	s, ok := tke.FromError(err)
 	if ok {
 		resp.Code = s.Code.Code()
 		resp.Msg = s.Msg
@@ -197,7 +196,7 @@ func errorRes(err error) (resp *tkpb.Response) {
 // errorInit .
 func errorInit(err error) (resp *tkpb.Response) {
 	resp = &tkpb.Response{
-		Code: etk.ERROR.Code(),
+		Code: tke.Err.Code(),
 		Msg:  err.Error(),
 	}
 	if !omitDetail {
@@ -208,10 +207,5 @@ func errorInit(err error) (resp *tkpb.Response) {
 
 // loggingError .
 func loggingError(err error) {
-	if logger == nil {
-		err = errors.New("请先实例化logger，实例化方法：appkt.SetLogger()；")
-		tk.Fatal(err)
-		return
-	}
-	logger.ERROR(err)
+	logger.Error(err)
 }

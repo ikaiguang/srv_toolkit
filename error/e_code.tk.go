@@ -12,7 +12,7 @@ func (c Code) Code() int32 {
 const (
 	Success           Code = 200 // 成功
 	Unknown           Code = 1   // 未知错误
-	Error             Code = 2   // 系统错误
+	Err               Code = 2   // 系统错误
 	Db                Code = 3   // 数据库错误
 	Redis             Code = 4   // Redis错误
 	Forbidden         Code = 5   // 没有权限

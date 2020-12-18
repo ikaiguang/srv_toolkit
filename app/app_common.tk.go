@@ -1,8 +1,9 @@
-package apptk
+package tkapp
 
 import (
 	"bytes"
-	"github.com/golang/protobuf/jsonpb"
+	"github.com/gogo/protobuf/jsonpb"
+	"log"
 	"sync"
 )
 
@@ -34,20 +35,15 @@ const (
 
 // LoggerInterface .
 type LoggerInterface interface {
-	INFO(err error)
-	ERROR(err error)
+	Error(err error)
 }
 
 // Log LoggerInterface impl
 type Log struct{}
 
-// INFO LoggerInterface impl
-func (Log) INFO(err error) {
-	return
-}
-
-// ERROR LoggerInterface impl
-func (Log) ERROR(err error) {
+// Error LoggerInterface impl
+func (Log) Error(err error) {
+	log.Println(err)
 	return
 }
 

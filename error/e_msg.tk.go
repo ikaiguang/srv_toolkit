@@ -9,7 +9,7 @@ func Msg(c Code) string {
 var msg = map[Code]string{
 	Success:           "成功",
 	Unknown:           "未知错误",
-	Error:             "系统错误",
+	Err:               "系统错误",
 	Db:                "数据库错误",
 	Redis:             "Redis错误",
 	Forbidden:         "没有权限",

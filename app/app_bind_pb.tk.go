@@ -1,7 +1,7 @@
-package apptk
+package tkapp
 
 import (
-	"github.com/golang/protobuf/proto"
+	"github.com/gogo/protobuf/proto"
 	"io/ioutil"
 	"net/http"
 )
