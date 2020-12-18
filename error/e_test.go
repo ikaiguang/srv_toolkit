@@ -1,9 +1,9 @@
-package etk
+package tke
 
 import "testing"
 
 func TestFromError(t *testing.T) {
-	code := UNKNOWN
+	code := Unknown
 	err := New(code)
 	s, ok := FromError(err)
 	if !ok {
