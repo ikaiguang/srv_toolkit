@@ -27,11 +27,6 @@ func INFO(err error) {
 	logger.Info(err.Error() + "\n" + ErrorST(err))
 }
 
-// DEBUG .
-func DEBUG(err error) {
-	tk.Info(err)
-}
-
 // stackTracer errors.StackTrace
 type stackTracer interface {
 	StackTrace() errors.StackTrace
