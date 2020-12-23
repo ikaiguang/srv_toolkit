@@ -2,9 +2,11 @@ package tkapp
 
 import (
 	"encoding/json"
-	"github.com/gogo/protobuf/jsonpb"
-	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
+	"io"
+	"io/ioutil"
 	"net/http"
 )
 
@@ -17,19 +19,26 @@ func (jsonBinding) Name() string {
 }
 
 // Bind .
-func (b jsonBinding) Bind(req *http.Request, obj interface{}) error {
-	// pb
-	if in, ok := obj.(proto.Message); ok {
-		if err := jsonpb.Unmarshal(req.Body, in); err != nil {
+func (b jsonBinding) Bind(req *http.Request, obj interface{}) (err error) {
+	// read
+	buf, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		if err == io.EOF {
+			err = nil
 			return err
 		}
-		return nil
+		err = errors.WithStack(err)
+		return err
 	}
 
-	// json
-	decoder := json.NewDecoder(req.Body)
-	if err := decoder.Decode(obj); err != nil {
+	// unmarshal
+	if in, ok := obj.(proto.Message); ok {
+		err = protojson.Unmarshal(buf, in)
+	} else {
+		err = json.Unmarshal(buf, obj)
+	}
+	if err != nil {
 		return errors.WithStack(err)
 	}
-	return nil
+	return err
 }

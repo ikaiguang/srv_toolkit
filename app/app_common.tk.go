@@ -2,7 +2,7 @@ package tkapp
 
 import (
 	"bytes"
-	"github.com/gogo/protobuf/jsonpb"
+	"github.com/golang/protobuf/jsonpb"
 	"log"
 	"sync"
 )

@@ -3,7 +3,7 @@ package tkapp
 import (
 	"encoding/json"
 	"github.com/go-kratos/kratos/pkg/net/http/blademaster"
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
 	tkpb "github.com/ikaiguang/srv_toolkit/api"
 	tke "github.com/ikaiguang/srv_toolkit/error"

@@ -4,7 +4,7 @@ import "runtime"
 
 // File file line
 func File(skips ...int) (file string, line int) {
-	skip := 1
+	var skip int
 	if len(skips) > 0 {
 		skip = skips[0]
 	}

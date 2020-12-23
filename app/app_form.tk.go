@@ -3,8 +3,8 @@ package tkapp
 import (
 	"github.com/go-kratos/kratos/pkg/net/http/blademaster"
 	"github.com/go-kratos/kratos/pkg/net/http/blademaster/binding"
-	"github.com/gogo/protobuf/proto"
 	etk "github.com/ikaiguang/srv_toolkit/error"
+	"google.golang.org/protobuf/proto"
 	"strings"
 )
 

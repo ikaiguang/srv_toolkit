@@ -1,7 +1,7 @@
 package tkapp
 
 import (
-	"github.com/gogo/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 	"io/ioutil"
 	"net/http"
 )

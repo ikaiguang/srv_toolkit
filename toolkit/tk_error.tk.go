@@ -46,3 +46,9 @@ func Fatal(err error, stackTracerDepths ...int) {
 	Info(err, stackTracerDepths...)
 	os.Exit(1)
 }
+
+// Exit exit with code 0
+func Exit(err error, stackTracerDepths ...int) {
+	Info(err, stackTracerDepths...)
+	os.Exit(0)
+}
