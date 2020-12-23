@@ -17,7 +17,7 @@ var (
 	omitDetail bool
 
 	// logger
-	logger LoggerInterface = Log{}
+	logger LoggerInterface = &Log{}
 )
 
 // SetLogger

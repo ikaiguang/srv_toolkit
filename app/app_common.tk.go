@@ -42,7 +42,7 @@ type LoggerInterface interface {
 type Log struct{}
 
 // Error LoggerInterface impl
-func (Log) Error(err error) {
+func (*Log) Error(err error) {
 	log.Println(err)
 	return
 }
