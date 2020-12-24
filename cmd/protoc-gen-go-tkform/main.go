@@ -17,6 +17,7 @@ import (
 	"os"
 	"path/filepath"
 
+	//"google.golang.org/protobuf/internal/version"
 	gengo "google.golang.org/protobuf/cmd/protoc-gen-go/internal_gengo"
 	"google.golang.org/protobuf/compiler/protogen"
 )
