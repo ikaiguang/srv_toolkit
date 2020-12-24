@@ -66,7 +66,7 @@ func Start(engine *blademaster.Engine) (err error) {
 				tklog.Info("http server closed")
 				return
 			}
-			tk.Exit(errors.Wrapf(err, "http engine.ListenServer(%+v, %+v)", server, l))
+			tk.Fatal(errors.Wrapf(err, "http engine.ListenServer(%+v, %+v)", server, l))
 		}
 	}()
 	return
