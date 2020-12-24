@@ -11,12 +11,13 @@ import (
 
 // path
 var (
-	appPath     string
-	configPath  string
-	runtimePath string
-	logPath     string
-	staticPath  string
-	version     string
+	appPath         string
+	configPath      string
+	runtimePath     string
+	logPath         string
+	staticPath      string
+	attachmentsPath string
+	version         string
 )
 
 // config
@@ -102,6 +103,11 @@ func LogPath() string {
 // StaticPath static path
 func StaticPath() string {
 	return staticPath
+}
+
+// AttachmentPath attachments path
+func AttachmentPath() string {
+	return attachmentsPath
 }
 
 // SetEnv .
@@ -198,6 +204,25 @@ func InitPath() (err error) {
 	}
 	if !dirInfo.IsDir() {
 		err = errors.Errorf("Not a directory : %s", logPath)
+		return
+	}
+
+	// attachments
+	attachmentsPath = filepath.Join(appPath, "attachments")
+	dirInfo, err = os.Stat(attachmentsPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			err = os.Mkdir(attachmentsPath, defaultFileMode)
+			if err != nil {
+				err = errors.WithStack(err)
+				return
+			}
+		}
+		err = errors.WithStack(err)
+		return
+	}
+	if !dirInfo.IsDir() {
+		err = errors.Errorf("Not a directory : %s", attachmentsPath)
 		return
 	}
 	return
