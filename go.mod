@@ -13,4 +13,6 @@ require (
 	github.com/tebeka/strftime v0.1.5 // indirect
 	go.uber.org/zap v1.14.1
 	google.golang.org/protobuf v1.25.0
+	gorm.io/driver/mysql v1.0.3 // indirect
+	gorm.io/gorm v1.20.8 // indirect
 )
