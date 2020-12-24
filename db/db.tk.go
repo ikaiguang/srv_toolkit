@@ -1,4 +1,4 @@
-package dbpkg
+package tkdb
 
 import (
 	"context"
