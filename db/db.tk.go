@@ -27,7 +27,7 @@ func Setup(dbConf, section string) {
 		}
 	}()
 
-	dbConn, err = NewDB()
+	dbConn, err = NewDB(dbConf, section)
 	if err != nil {
 		return
 	}
@@ -82,4 +82,19 @@ func getConfig(dbConf, section string) (cfg *sql.Config, err error) {
 		return
 	}
 	return
+}
+
+// Begin transaction
+func Begin(ctx context.Context) (tx *sql.Tx, err error) {
+	return dbConn.Begin(ctx)
+}
+
+// Commit .
+func Commit(tx *sql.Tx) error {
+	return tx.Commit()
+}
+
+// Rollback .
+func Rollback(tx *sql.Tx) error {
+	return tx.Rollback()
 }
