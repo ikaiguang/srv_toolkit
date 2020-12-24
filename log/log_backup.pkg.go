@@ -3,11 +3,12 @@ package tklog
 import "github.com/go-kratos/kratos/pkg/log"
 
 // SetupBackup .
-func Setup2() {
-	cfg := &log.Config{
-		Stdout: true,
+func SetupBackup(logConf, section string) {
+	cfg, err := getConfig(logConf, section)
+	if err != nil {
+		return
 	}
-	log.Init(cfg)
+	log.Init(&cfg.Config)
 	//defer log.Close()
 }
 

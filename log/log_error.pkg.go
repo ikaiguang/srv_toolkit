@@ -11,20 +11,19 @@ import (
 // ERROR .
 func ERROR(err error) {
 	//logger.Error(err.Error())
-	logger.Error(err.Error(), zap.String(_stackTrace, ErrorST(err)))
+	logger.Error(err.Error(), zap.String(_stackTrace, ErrStackTrace(err)))
 }
 
 // ERRORC .
 func ERRORC(ctx context.Context, err error) {
-	args := append(AddExtraField(ctx), zap.String(_stackTrace, ErrorST(err)))
+	args := append(AddExtraField(ctx), zap.String(_stackTrace, ErrStackTrace(err)))
 	logger.Error(err.Error(), args...)
-	//logger.Error(err.Error(), AddExtraField(ctx)...)
 }
 
 // INFO .
 func INFO(err error) {
 	//logger.Info(err.Error())
-	logger.Info(err.Error() + "\n" + ErrorST(err))
+	logger.Info(err.Error(), zap.String(_stackTrace, ErrStackTrace(err)))
 }
 
 // stackTracer errors.StackTrace
@@ -32,8 +31,8 @@ type stackTracer interface {
 	StackTrace() errors.StackTrace
 }
 
-// ErrorST error stack trace
-func ErrorST(err error) (est string) {
+// ErrStackTrace error stack trace
+func ErrStackTrace(err error) (est string) {
 	if err == nil {
 		file, line := tk.File(3)
 		est = fmt.Sprintf("\n%s:%d\n", file, line)

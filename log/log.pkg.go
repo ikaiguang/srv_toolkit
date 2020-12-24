@@ -1,6 +1,7 @@
 package tklog
 
 import (
+	"github.com/go-kratos/kratos/pkg/conf/paladin"
 	tkinit "github.com/ikaiguang/srv_toolkit/initialize"
 	tk "github.com/ikaiguang/srv_toolkit/toolkit"
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
@@ -51,6 +52,22 @@ func Close() (err error) {
 	//}
 	err = initConsole()
 	if err != nil {
+		return
+	}
+	return
+}
+
+// getConfig .
+func getConfig(filename, section string) (cfg *Config, err error) {
+	var ct paladin.TOML
+	if err = paladin.Get(filename).Unmarshal(&ct); err != nil {
+		err = errors.WithStack(err)
+		return
+	}
+
+	cfg = &Config{}
+	if err = ct.Get(section).UnmarshalTOML(cfg); err != nil {
+		err = errors.WithStack(err)
 		return
 	}
 	return
