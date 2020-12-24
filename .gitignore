@@ -1,5 +1,6 @@
 .idea
 .vscode
+.DS_Store
 *.exe
 
 # 附件
@@ -15,6 +16,7 @@ main
 test.go
 
 # cmd
+push.sh
 cmd
 cmd.go
 cmd.exe
