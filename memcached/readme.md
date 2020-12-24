@@ -2,5 +2,5 @@
 
 初始化方法
 
-- tkmc.Setup("redis.toml", "Client")
+- tkmc.Setup("memcached.toml", "Client")
 - tkmc.Close()

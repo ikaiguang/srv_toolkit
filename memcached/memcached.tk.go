@@ -18,7 +18,7 @@ func MC() *memcache.Memcache {
 }
 
 // Setup .
-func Setup() {
+func Setup(mcConf, section string) {
 	var err error
 	defer func() {
 		if err != nil {
@@ -26,7 +26,7 @@ func Setup() {
 		}
 	}()
 
-	mc, err = NewMC()
+	mc, err = NewMC(mcConf, section)
 	if err != nil {
 		return
 	}
@@ -49,8 +49,8 @@ func Close() (err error) {
 }
 
 // NewMC *memcache.Memcache
-func NewMC() (conn *memcache.Memcache, err error) {
-	cfg, err := getConfig()
+func NewMC(mcConf, section string) (conn *memcache.Memcache, err error) {
+	cfg, err := getConfig(mcConf, section)
 	if err != nil {
 		return
 	}
@@ -66,15 +66,15 @@ func NewMCWithConfig(cfg *memcache.Config) (conn *memcache.Memcache) {
 }
 
 // getConfig .
-func getConfig() (cfg *memcache.Config, err error) {
+func getConfig(mcConf, section string) (cfg *memcache.Config, err error) {
 	var ct paladin.TOML
-	if err = paladin.Get("memcached.toml").Unmarshal(&ct); err != nil {
+	if err = paladin.Get(mcConf).Unmarshal(&ct); err != nil {
 		err = errors.WithStack(err)
 		return
 	}
 
 	cfg = &memcache.Config{}
-	if err = ct.Get("Client").UnmarshalTOML(cfg); err != nil {
+	if err = ct.Get(section).UnmarshalTOML(cfg); err != nil {
 		err = errors.WithStack(err)
 		return
 	}
