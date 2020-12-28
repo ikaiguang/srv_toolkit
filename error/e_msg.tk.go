@@ -12,7 +12,7 @@ var msg = map[Code]string{
 	Err:               "系统错误",
 	Db:                "数据库错误",
 	Redis:             "Redis错误",
-	Forbidden:         "没有权限",
+	Forbidden:         "无权限操作资源，访问被拒绝",
 	InvalidParameters: "参数错误",
 	BadRequest:        "无效的请求",
 	NoneToken:         "请携带登录令牌",

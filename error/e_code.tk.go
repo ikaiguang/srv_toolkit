@@ -15,7 +15,7 @@ const (
 	Err               Code = 2   // 系统错误
 	Db                Code = 3   // 数据库错误
 	Redis             Code = 4   // Redis错误
-	Forbidden         Code = 5   // 没有权限
+	Forbidden         Code = 5   // 无权限操作资源，访问被拒绝
 	InvalidParameters Code = 6   // 参数错误
 	BadRequest        Code = 7   // 无效的请求
 	NoneToken         Code = 8   // 请携带登录令牌
