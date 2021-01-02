@@ -41,8 +41,8 @@ type RequestParam struct {
 	Body io.Reader
 }
 
-// DefaultRequestParam .
-func DefaultRequestParam() *RequestParam {
+// JSONRequestParam .
+func JSONRequestParam() *RequestParam {
 	return &RequestParam{
 		Timeout:     DefaultTimeout,
 		ContentType: ContentTypeJSON,
