@@ -5,25 +5,31 @@ import (
 	"github.com/go-kratos/kratos/pkg/net/http/blademaster/binding"
 	etk "github.com/ikaiguang/srv_toolkit/error"
 	"google.golang.org/protobuf/proto"
-	"strings"
+	"net/http"
 )
 
 // Bind .
 func Bind(ctx *blademaster.Context, in proto.Message) (err error) {
+	if ctx.Request.Method == http.MethodGet {
+		err = binding.Form.Bind(ctx.Request, in)
+		if err != nil {
+			err = etk.Newf(etk.InvalidParameters, err)
+		}
+		return
+	}
+
 	// bind
 	switch contentType := ctx.Request.Header.Get(ContentTypeKey); contentType {
 	case ContentTypePB:
-		err = ctx.BindWith(in, PBBind)
+		err = PBBind.Bind(ctx.Request, in)
 	case ContentTypeJSON:
-		err = ctx.BindWith(in, JSONBind)
+		err = JSONBind.Bind(ctx.Request, in)
 	case binding.MIMEJSON:
-		err = ctx.BindWith(in, JSONBind)
+		err = JSONBind.Bind(ctx.Request, in)
+	case binding.MIMEXML, binding.MIMEXML2:
+		err = binding.XML.Bind(ctx.Request, in)
 	default:
-		if strings.HasPrefix(contentType, binding.MIMEJSON) {
-			err = ctx.BindWith(in, JSONBind)
-		} else {
-			err = ctx.BindWith(in, binding.Default(ctx.Request.Method, contentType))
-		}
+		err = binding.Form.Bind(ctx.Request, in)
 	}
 	if err != nil {
 		err = etk.Newf(etk.InvalidParameters, err)
