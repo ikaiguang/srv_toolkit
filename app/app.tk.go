@@ -34,9 +34,7 @@ func OmitDetail() {
 // Success response
 func Success(ctx *blademaster.Context, data proto.Message) {
 	switch ctx.Request.Header.Get(ContentTypeKey) {
-	case binding.MIMEJSON:
-		JSON(ctx, data)
-	case ContentTypeJSON:
+	case binding.MIMEJSON, ContentTypeJSON:
 		JSON(ctx, data)
 	default:
 		PB(ctx, data)
@@ -46,9 +44,7 @@ func Success(ctx *blademaster.Context, data proto.Message) {
 // Error response
 func Error(ctx *blademaster.Context, err error) {
 	switch ctx.Request.Header.Get(ContentTypeKey) {
-	case binding.MIMEJSON:
-		JSONError(ctx, err)
-	case ContentTypeJSON:
+	case binding.MIMEJSON, ContentTypeJSON:
 		JSONError(ctx, err)
 	default:
 		PBError(ctx, err)
