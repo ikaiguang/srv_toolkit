@@ -29,7 +29,7 @@ var (
 // context type
 const (
 	ContentTypeKey  = "Content-Type"
-	ContentTypeJSON = "application/json;charset=utf8"
+	ContentTypeJSON = "application/json; charset=utf-8"
 	ContentTypePB   = "application/x-protobuf"
 )
 
