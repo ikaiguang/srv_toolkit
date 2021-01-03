@@ -11,6 +11,7 @@ var msg = map[Code]string{
 	Success:           "成功",
 	Unknown:           "未知错误",
 	Err:               "系统错误",
+	Panic:             "系统错误:Panic",
 	Db:                "数据库错误",
 	Redis:             "Redis错误",
 	Forbidden:         "无权限操作资源，访问被拒绝",

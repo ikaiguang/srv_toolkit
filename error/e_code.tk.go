@@ -12,8 +12,9 @@ func (c Code) Code() int32 {
 const (
 	Init              Code = 0     // init
 	Success           Code = 200   // 成功
-	Unknown           Code = 10001 // 未知错误
-	Err               Code = 10002 // 系统错误
+	Unknown           Code = 10000 // 未知错误
+	Err               Code = 10001 // 系统错误
+	Panic             Code = 10002 // 系统错误:Panic
 	Db                Code = 10003 // 数据库错误
 	Redis             Code = 10004 // Redis错误
 	Forbidden         Code = 10005 // 无权限操作资源，访问被拒绝

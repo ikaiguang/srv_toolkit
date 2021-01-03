@@ -13,7 +13,7 @@ func TestFromError(t *testing.T) {
 		t.Fail()
 		return
 	}
-	if s.Code != code {
+	if s.Code32() != code.Code() {
 		t.Log("parse error success, but s.Code not equal err.Code")
 		t.Fail()
 		return

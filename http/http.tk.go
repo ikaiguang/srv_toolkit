@@ -42,9 +42,9 @@ func New(httpConf, section string) (engine *blademaster.Engine, err error) {
 		return
 	}
 
-	//engine = blademaster.DefaultServer(&conf)
-	engine = blademaster.NewServer(&conf)
-	engine.Use(blademaster.Recovery(), blademaster.Trace(), Logger())
+	engine = blademaster.DefaultServer(&conf)
+	//engine = blademaster.NewServer(&conf)
+	//engine.Use(blademaster.Recovery(), blademaster.Trace(), blademaster.Logger())
 	return
 }
 
