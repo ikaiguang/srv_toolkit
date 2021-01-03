@@ -36,7 +36,7 @@ func Success(ctx *blademaster.Context, data proto.Message) {
 	case ContentTypePB:
 		PB(ctx, data)
 	default:
-		PB(ctx, data)
+		JSON(ctx, data)
 	}
 }
 
