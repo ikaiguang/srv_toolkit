@@ -208,8 +208,8 @@ func errorRes(err error) (resp *tkpb.Response) {
 
 	s, ok := tke.FromError(err)
 	if ok {
-		resp.Code = s.Code.Code()
-		resp.Msg = s.Msg
+		resp.Code = s.Code32()
+		resp.Msg = s.Message()
 	}
 	return
 }

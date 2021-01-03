@@ -23,7 +23,11 @@ func (s *Status) Error() string {
 	return fmt.Sprintf(`code:%d | msg:%s | details:%v`, s.Code(), s.Message(), s.Details())
 }
 
+// Code return error code
 func (s *Status) Code() int { return int(s.code.Code()) }
+
+// Code32 return error code
+func (s *Status) Code32() int32 { return s.code.Code() }
 
 // Message return error message
 func (s *Status) Message() string {
