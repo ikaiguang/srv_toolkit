@@ -43,6 +43,7 @@ func Setup(logConf, section string) {
 
 // Close .
 func Close() (err error) {
+	_ = log.Close()
 	_ = logger.Sync()
 	//err = logger.Sync()
 	//if err != nil {
