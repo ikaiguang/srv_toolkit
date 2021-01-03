@@ -7,6 +7,7 @@ func Msg(c Code) string {
 
 // msg .
 var msg = map[Code]string{
+	Init:              "init",
 	Success:           "成功",
 	Unknown:           "未知错误",
 	Err:               "系统错误",

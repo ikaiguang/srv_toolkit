@@ -1,6 +1,8 @@
 package tke
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestFromError(t *testing.T) {
 	code := Unknown

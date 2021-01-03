@@ -13,7 +13,7 @@ func Bind(ctx *blademaster.Context, in proto.Message) (err error) {
 	if ctx.Request.Method == http.MethodGet {
 		err = binding.Form.Bind(ctx.Request, in)
 		if err != nil {
-			err = etk.Newf(etk.InvalidParameters, err)
+			err = etk.New(etk.InvalidParameters, err)
 		}
 		return
 	}
@@ -32,7 +32,7 @@ func Bind(ctx *blademaster.Context, in proto.Message) (err error) {
 		err = binding.Form.Bind(ctx.Request, in)
 	}
 	if err != nil {
-		err = etk.Newf(etk.InvalidParameters, err)
+		err = etk.New(etk.InvalidParameters, err)
 		return
 	}
 	return

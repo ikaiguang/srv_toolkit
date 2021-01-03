@@ -13,25 +13,38 @@ const (
 
 // Status .
 type Status struct {
-	Code   Code
-	Msg    string
-	Detail string
+	code    Code
+	msg     string
+	details []interface{}
 }
 
 // Error .
 func (s *Status) Error() string {
-	//return fmt.Sprintf(`{"code":%d,"msg":"%s","detail":"%s"}`, s.Code, s.Msg, s.Detail)
-	return fmt.Sprintf(`code:%d,msg:%s,detail:%s`, s.Code, s.Msg, s.Detail)
+	return fmt.Sprintf(`code:%d | msg:%s | details:%v`, s.Code(), s.Message(), s.Details())
 }
 
+func (s *Status) Code() int { return int(s.code.Code()) }
+
+// Message return error message
+func (s *Status) Message() string {
+	return s.msg
+}
+
+// Details return details.
+func (s *Status) Details() []interface{} { return s.details }
+
 // New .
-func New(code Code) error {
-	return errors.WithStack(&Status{Code: code, Msg: Msg(code)})
+func New(code Code, details ...interface{}) error {
+	return errors.WithStack(&Status{code: code, msg: Msg(code), details: details})
 }
 
 // Newf .
-func Newf(code Code, err error) error {
-	return errors.WithStack(&Status{Code: code, Msg: Msg(code), Detail: err.Error()})
+func Newf(code Code, errs ...error) error {
+	s := &Status{code: code, msg: Msg(code), details: make([]interface{}, len(errs))}
+	for i := range errs {
+		s.details[i] = errs[i]
+	}
+	return errors.WithStack(s)
 }
 
 // FromError 解析错误
