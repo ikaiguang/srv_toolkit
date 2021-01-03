@@ -1,8 +1,37 @@
 package tke
 
+import (
+	"strconv"
+	"sync/atomic"
+)
+
+func init() {
+	Register(map[Code]string{})
+}
+
+// msg
+var (
+	_messages atomic.Value // NOTE: stored map[Code]string
+)
+
+// Register register code message map.
+func Register(cm map[Code]string) {
+	for c := range msg {
+		if _, ok := cm[c]; !ok {
+			cm[c] = msg[c]
+		}
+	}
+	_messages.Store(cm)
+}
+
 // Msg .
 func Msg(c Code) string {
-	return msg[c]
+	if cm, ok := _messages.Load().(map[Code]string); ok {
+		if msg, ok := cm[c]; ok {
+			return msg
+		}
+	}
+	return strconv.Itoa(int(c.Code()))
 }
 
 // msg .

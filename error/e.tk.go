@@ -30,9 +30,7 @@ func (s *Status) Code() int { return int(s.code.Code()) }
 func (s *Status) Code32() int32 { return s.code.Code() }
 
 // Message return error message
-func (s *Status) Message() string {
-	return s.msg
-}
+func (s *Status) Message() string { return s.msg }
 
 // Details return details.
 func (s *Status) Details() []interface{} { return s.details }
