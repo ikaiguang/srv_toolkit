@@ -31,6 +31,9 @@ func Setup(logConf, section string) {
 		}
 	}()
 
+	// 关闭kratos日志
+	//log.Init(&log.Config{})
+
 	//err = initDevelopment()
 	//err = initConsole()
 	err = initProduction(logConf, section)
