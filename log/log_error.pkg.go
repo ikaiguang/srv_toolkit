@@ -8,6 +8,14 @@ import (
 	"go.uber.org/zap"
 )
 
+// AppLogger .
+type AppLogger struct{}
+
+// Error .
+func (s *AppLogger) Error(err error) {
+	logger.Error(errorMessage(err) + "\n==>" + _stackTrace + " : " + ErrStackTrace(err))
+}
+
 // ERROR .
 func ERROR(err error) {
 	logger.Error(errorMessage(err) + "\n==>" + _stackTrace + " : " + ErrStackTrace(err))

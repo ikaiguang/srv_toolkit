@@ -3,7 +3,6 @@ package tkapp
 import (
 	"encoding/json"
 	"github.com/go-kratos/kratos/pkg/net/http/blademaster"
-	"github.com/go-kratos/kratos/pkg/net/http/blademaster/binding"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
 	tkpb "github.com/ikaiguang/srv_toolkit/api"
@@ -34,8 +33,8 @@ func OmitDetail() {
 // Success response
 func Success(ctx *blademaster.Context, data proto.Message) {
 	switch ctx.Request.Header.Get(ContentTypeKey) {
-	case binding.MIMEJSON, ContentTypeJSON:
-		JSON(ctx, data)
+	case ContentTypePB:
+		PB(ctx, data)
 	default:
 		PB(ctx, data)
 	}
@@ -44,10 +43,10 @@ func Success(ctx *blademaster.Context, data proto.Message) {
 // Error response
 func Error(ctx *blademaster.Context, err error) {
 	switch ctx.Request.Header.Get(ContentTypeKey) {
-	case binding.MIMEJSON, ContentTypeJSON:
-		JSONError(ctx, err)
-	default:
+	case ContentTypePB:
 		PBError(ctx, err)
+	default:
+		JSONError(ctx, err)
 	}
 }
 
