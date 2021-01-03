@@ -1,6 +1,7 @@
 package tklog
 
 import (
+	"github.com/go-kratos/kratos/pkg/log"
 	tk "github.com/ikaiguang/srv_toolkit/toolkit"
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
 	"github.com/pkg/errors"
@@ -30,9 +31,6 @@ func Setup(logConf, section string) {
 			tk.Exit(err)
 		}
 	}()
-
-	// 关闭kratos日志
-	//log.Init(&log.Config{})
 
 	//err = initDevelopment()
 	//err = initConsole()
@@ -64,6 +62,14 @@ func initProduction(logConf, section string) (err error) {
 	if err != nil {
 		return
 	}
+
+	// 初始化日志
+	log.Init(&cfg.Config)
+	if len(cfg.LogFormat) > 0 {
+		log.SetFormat(cfg.LogFormat)
+	}
+
+	// logger
 	var cores []zapcore.Core
 
 	// log
@@ -86,7 +92,7 @@ func initProduction(logConf, section string) (err error) {
 		logEncoderCfg.EncodeCaller = zapcore.ShortCallerEncoder
 	}
 	logEncoder := zapcore.NewConsoleEncoder(logEncoderCfg)
-	if cfg.LogFormat == _logFormatJSON {
+	if cfg.LogFormatter == _logFormatJSON {
 		logEncoder = zapcore.NewJSONEncoder(logEncoderCfg)
 	}
 	logLevel := zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
