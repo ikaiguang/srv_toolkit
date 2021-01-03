@@ -9,6 +9,7 @@ func SetupBackup(logConf, section string) {
 		return
 	}
 	log.Init(&cfg.Config)
+	//log.SetFormat("[%D %T] [%L] [%S] %M")
 	//defer log.Close()
 }
 

@@ -1,8 +1,6 @@
 package tklog
 
 import (
-	"github.com/go-kratos/kratos/pkg/conf/paladin"
-	tkinit "github.com/ikaiguang/srv_toolkit/initialize"
 	tk "github.com/ikaiguang/srv_toolkit/toolkit"
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
 	"github.com/pkg/errors"
@@ -57,22 +55,6 @@ func Close() (err error) {
 	return
 }
 
-// getConfig .
-func getConfig(filename, section string) (cfg *Config, err error) {
-	var ct paladin.TOML
-	if err = paladin.Get(filename).Unmarshal(&ct); err != nil {
-		err = errors.WithStack(err)
-		return
-	}
-
-	cfg = &Config{}
-	if err = ct.Get(section).UnmarshalTOML(cfg); err != nil {
-		err = errors.WithStack(err)
-		return
-	}
-	return
-}
-
 // initProduction .
 func initProduction(logConf, section string) (err error) {
 	cfg, err := getConfig(logConf, section)
@@ -107,7 +89,7 @@ func initProduction(logConf, section string) (err error) {
 	logLevel := zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
 		return lvl >= zapcore.InfoLevel
 	})
-	logWriter, err := getLogWriter(cfg.LogFilename)
+	logWriter, err := getLogWriter(cfg)
 	if err != nil {
 		return
 	}
@@ -116,7 +98,7 @@ func initProduction(logConf, section string) (err error) {
 	cores = append(cores, zapcore.NewCore(logEncoder, zapcore.AddSync(logWriter), logLevel))
 
 	// std
-	if cfg.StdOutLog {
+	if cfg.Stdout {
 		stdEncoderCfg := logEncoderCfg
 		stdEncoderCfg.EncodeLevel = zapcore.CapitalLevelEncoder
 		stdEncoderCfg.EncodeCaller = zapcore.FullCallerEncoder
@@ -133,11 +115,22 @@ func initProduction(logConf, section string) (err error) {
 }
 
 // getLogWriter log writer
-func getLogWriter(filename string) (writer io.Writer, err error) {
+func getLogWriter(cfg *Config) (writer io.Writer, err error) {
+	opts := []rotatelogs.Option{
+		rotatelogs.WithRotationTime(time.Hour * 24), // one day
+	}
+	// 文件大小
+	if cfg.RotateSize > 0 {
+		opts = append(opts, rotatelogs.WithRotationSize(cfg.RotateSize))
+	}
+	// 存储 n 个 或 n 久
+	if cfg.MaxLogFile > 0 {
+		opts = append(opts, rotatelogs.WithRotationCount(uint(cfg.MaxLogFile))) // n 个
+	} else {
+		opts = append(opts, rotatelogs.WithMaxAge(time.Hour*24*365*10)) // ten years
+	}
 	writer, err = rotatelogs.New(
-		filepath.Join(tkinit.LogPath(), filename+"app.log_%Y%m%d.log"),
-		rotatelogs.WithRotationTime(time.Hour*24),  // one day
-		rotatelogs.WithMaxAge(time.Hour*24*365*10), // ten years
+		filepath.Join(cfg.Dir, cfg.LogFilename+"_app.%Y%m%d.log"),
 	)
 	if err != nil {
 		err = errors.WithStack(err)

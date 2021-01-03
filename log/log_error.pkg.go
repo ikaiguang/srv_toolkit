@@ -10,8 +10,7 @@ import (
 
 // ERROR .
 func ERROR(err error) {
-	//logger.Error(err.Error())
-	logger.Error(err.Error(), zap.String(_stackTrace, ErrStackTrace(err)))
+	logger.Error(errorMessage(err) + "\n==>" + _stackTrace + " : " + ErrStackTrace(err))
 }
 
 // ERRORC .
@@ -23,7 +22,16 @@ func ERRORC(ctx context.Context, err error) {
 // INFO .
 func INFO(err error) {
 	//logger.Info(err.Error())
-	logger.Info(err.Error(), zap.String(_stackTrace, ErrStackTrace(err)))
+	logger.Info(errorMessage(err) + "\n==>" + _stackTrace + " : " + ErrStackTrace(err))
+}
+
+// errorMessage .
+func errorMessage(err error) (msg string) {
+	msg = "error : "
+	if err != nil {
+		msg += err.Error()
+	}
+	return msg + "nil"
 }
 
 // stackTracer errors.StackTrace

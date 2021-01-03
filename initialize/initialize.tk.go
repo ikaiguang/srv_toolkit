@@ -122,6 +122,16 @@ func SetEnv(cfg *Config) {
 	}
 }
 
+// IsTest test
+func IsTest() bool {
+	switch env.DeployEnv {
+	case env.DeployEnvPre, env.DeployEnvProd:
+		return false
+	default:
+		return true
+	}
+}
+
 // InitPath .
 func InitPath() (err error) {
 	// app

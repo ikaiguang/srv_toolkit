@@ -3,20 +3,54 @@ package tklog
 import (
 	"context"
 	"github.com/go-kratos/kratos/pkg/conf/env"
+	"github.com/go-kratos/kratos/pkg/conf/paladin"
 	"github.com/go-kratos/kratos/pkg/log"
 	"github.com/go-kratos/kratos/pkg/net/metadata"
 	"github.com/go-kratos/kratos/pkg/net/trace"
+	tkinit "github.com/ikaiguang/srv_toolkit/initialize"
+	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	"path/filepath"
 	"time"
 )
 
 // Config .
 type Config struct {
 	log.Config
-	StdOutLog      bool
+	LogFormat string
+
+	// ext
 	LogFilename    string
-	LogFormat      string
+	LogFormatter   string
 	LogShortCaller bool
+}
+
+// getConfig .
+func getConfig(filename, section string) (cfg *Config, err error) {
+	var ct paladin.TOML
+	if err = paladin.Get(filename).Unmarshal(&ct); err != nil {
+		err = errors.WithStack(err)
+		return
+	}
+
+	cfg = &Config{}
+	if err = ct.Get(section).UnmarshalTOML(cfg); err != nil {
+		err = errors.WithStack(err)
+		return
+	}
+
+	// output
+	cfg.Stdout = tkinit.IsTest()
+
+	// log path
+	switch {
+	case cfg.Dir == "":
+		cfg.Dir = tkinit.LogPath()
+	case filepath.IsAbs(cfg.Dir):
+	default:
+		cfg.Dir = filepath.Join(tkinit.RuntimePath(), cfg.Dir)
+	}
+	return
 }
 
 // log
