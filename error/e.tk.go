@@ -20,7 +20,7 @@ type Status struct {
 
 // Error .
 func (s *Status) Error() string {
-	return fmt.Sprintf(`code:%d | msg:%s | details:%v`, s.Code(), s.Message(), s.Details())
+	return fmt.Sprintf(`code:%d | msg:%s | details:%s`, s.Code(), s.Message(), fmt.Sprint(s.Details()...))
 }
 
 // Code return error code
