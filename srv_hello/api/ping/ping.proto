@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+package pingpb;
+
+option go_package = "github.com/ikaiguang/srv_toolkit/srv_hello/api/ping;pingpb";
+
+import "google/api/annotations.proto";
+
+/**
+ *
+ * @apiDefine PingReq ping请求
+ *
+ * @apiParam (ping请求) {-----} nothing 无需传参
+ *
+ */
+
+// PingReq ping请求
+message PingReq {
+
+}
+
+/**
+ *
+ * @apiDefine PingResp ping响应
+ *
+ * @apiSuccess (ping响应) {string} message 响应消息：pong
+ *
+ */
+
+// PingResp ping响应
+message PingResp {
+  string message = 1;// 响应消息：pong
+}
+
+// CkgPing ping
+service CkgPing {
+  /**
+   *
+   * @api {GET} /ping Ping-ping
+   *
+   * @apiVersion 1.0.1
+   *
+   * @apiGroup Ping
+   *
+   * @apiName Ping_ping
+   *
+   * @apiUse PingReq
+   *
+   * @apiUse PingResp
+   *
+   */
+
+  // Ping ping
+  rpc Ping (PingReq) returns (PingResp) {
+    option (google.api.http) = {
+      get: "/ping"
+    };
+  }
+}

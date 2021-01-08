@@ -1,0 +1,7 @@
+[App]
+
+appID = "srv_hello"
+deployEnv = "dev" # dev/pre/prod
+
+# 扩展
+version = "0.0.1"
