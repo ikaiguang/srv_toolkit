@@ -2,6 +2,7 @@ package tkredis
 
 import (
 	"github.com/go-kratos/kratos/pkg/cache/redis"
+	"github.com/go-kratos/kratos/pkg/conf/env"
 	"github.com/go-kratos/kratos/pkg/conf/paladin"
 	tk "github.com/ikaiguang/srv_toolkit/toolkit"
 	"github.com/pkg/errors"
@@ -77,6 +78,9 @@ func getConfig(redisConf, section string) (cfg *redis.Config, err error) {
 	if err = ct.Get(section).UnmarshalTOML(cfg); err != nil {
 		err = errors.WithStack(err)
 		return
+	}
+	if env.AppID != "" {
+		cfg.Name = env.AppID
 	}
 	return
 }
