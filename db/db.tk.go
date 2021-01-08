@@ -10,8 +10,8 @@ import (
 
 // db
 var (
-	cfg    = &Config{}
-	dbConn *sql.DB
+	dbConn      *sql.DB
+	tablePrefix string
 )
 
 // Config .
@@ -27,7 +27,7 @@ func DB() *sql.DB {
 
 // TablePrefix .
 func TablePrefix() string {
-	return cfg.TablePrefix
+	return tablePrefix
 }
 
 // Setup .
@@ -88,10 +88,12 @@ func getConfig(dbConf, section string) (cfg *Config, err error) {
 		return
 	}
 
+	cfg = &Config{}
 	if err = ct.Get(section).UnmarshalTOML(cfg); err != nil {
 		err = errors.WithStack(err)
 		return
 	}
+	tablePrefix = cfg.TablePrefix
 	return
 }
 
