@@ -2,7 +2,6 @@ package tkmc
 
 import (
 	"github.com/go-kratos/kratos/pkg/cache/memcache"
-	"github.com/go-kratos/kratos/pkg/conf/env"
 	"github.com/go-kratos/kratos/pkg/conf/paladin"
 	tk "github.com/ikaiguang/srv_toolkit/toolkit"
 	"github.com/pkg/errors"
@@ -79,8 +78,8 @@ func getConfig(mcConf, section string) (cfg *memcache.Config, err error) {
 		err = errors.WithStack(err)
 		return
 	}
-	if env.AppID != "" {
-		cfg.Name = env.AppID
-	}
+	//if env.AppID != "" {
+	//	cfg.Name = env.AppID
+	//}
 	return
 }
