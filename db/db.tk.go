@@ -10,12 +10,24 @@ import (
 
 // db
 var (
+	cfg    = &Config{}
 	dbConn *sql.DB
 )
+
+// Config .
+type Config struct {
+	sql.Config
+	TablePrefix string
+}
 
 // DB *sql.DB
 func DB() *sql.DB {
 	return dbConn
+}
+
+// TablePrefix .
+func TablePrefix() string {
+	return cfg.TablePrefix
 }
 
 // Setup .
@@ -57,7 +69,7 @@ func NewDB(dbConf, section string) (conn *sql.DB, err error) {
 	if err != nil {
 		return
 	}
-	conn = NewDBWithConfig(cfg)
+	conn = NewDBWithConfig(&cfg.Config)
 	//cf = func() {conn.Close()}
 	return
 }
@@ -69,14 +81,13 @@ func NewDBWithConfig(cfg *sql.Config) (conn *sql.DB) {
 }
 
 // getConfig .
-func getConfig(dbConf, section string) (cfg *sql.Config, err error) {
+func getConfig(dbConf, section string) (cfg *Config, err error) {
 	var ct paladin.TOML
 	if err = paladin.Get(dbConf).Unmarshal(&ct); err != nil {
 		err = errors.WithStack(err)
 		return
 	}
 
-	cfg = &sql.Config{}
 	if err = ct.Get(section).UnmarshalTOML(cfg); err != nil {
 		err = errors.WithStack(err)
 		return
