@@ -13,7 +13,9 @@ tablePrefix = "srv_"
 
 [Migration]
 
+createDb = true
 databaseName = "srv_hello"
+# dsn 无需配置数据库名
 dsn = "root:Mysql.123456@tcp(127.0.0.1:3306)/?timeout=1s&readTimeout=1s&writeTimeout=1s&parseTime=true&loc=Local&charset=utf8mb4,utf8"
 active = 20
 idle = 10
@@ -21,3 +23,4 @@ idleTimeout = "1h"
 queryTimeout = "200ms"
 execTimeout = "300ms"
 tranTimeout = "500ms"
+tablePrefix = "srv_"

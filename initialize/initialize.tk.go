@@ -132,6 +132,15 @@ func IsTest() bool {
 	}
 }
 
+// 相对路径
+const (
+	RelPathConfig      = "conf.d"
+	RelPathStatic      = "static.d"
+	RelPathRuntime     = "runtime"
+	RelPathLogs        = "logs"
+	RelPathAttachments = "attachments"
+)
+
 // InitPath .
 func InitPath() (err error) {
 	// app
@@ -145,11 +154,11 @@ func InitPath() (err error) {
 	var dirInfo os.FileInfo
 
 	// config
-	configPath = filepath.Join(appPath, "config")
+	configPath = filepath.Join(appPath, RelPathConfig)
 	dirInfo, err = os.Stat(configPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			err = errors.Errorf("cannot find config path : ./config;\n\terror : %s", err.Error())
+			err = errors.Errorf("cannot find config path : ./%s;\n\terror : %s", RelPathConfig, err.Error())
 			return
 		}
 		err = errors.WithStack(err)
@@ -161,7 +170,7 @@ func InitPath() (err error) {
 	}
 
 	// static
-	staticPath = filepath.Join(appPath, "static")
+	staticPath = filepath.Join(appPath, RelPathStatic)
 	dirInfo, err = os.Stat(staticPath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -180,7 +189,7 @@ func InitPath() (err error) {
 	}
 
 	// runtime
-	runtimePath = filepath.Join(appPath, "runtime")
+	runtimePath = filepath.Join(appPath, RelPathRuntime)
 	dirInfo, err = os.Stat(runtimePath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -199,7 +208,7 @@ func InitPath() (err error) {
 	}
 
 	// log
-	logPath = filepath.Join(runtimePath, "logs")
+	logPath = filepath.Join(runtimePath, RelPathLogs)
 	dirInfo, err = os.Stat(logPath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -218,7 +227,7 @@ func InitPath() (err error) {
 	}
 
 	// attachments
-	attachmentsPath = filepath.Join(appPath, "attachments")
+	attachmentsPath = filepath.Join(appPath, RelPathAttachments)
 	dirInfo, err = os.Stat(attachmentsPath)
 	if err != nil {
 		if os.IsNotExist(err) {

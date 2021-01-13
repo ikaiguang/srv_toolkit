@@ -7,7 +7,14 @@
 attachment
 
 # 运行时
+attachments
 runtime
+
+# hello
+srv_hello/.idea
+srv_hello/.vscode
+srv_hello/.DS_Store
+srv_hello/test.go
 
 # main
 main
