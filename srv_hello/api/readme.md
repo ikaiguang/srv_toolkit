@@ -3,8 +3,8 @@
 ```shell script
 
 # 安装编译工具 protoc-gen-go@v1.25.0 protoc-gen-go-grpc@v1.4.3
-go get github.com\ikaiguang\protoc-gen-go\cmd\protoc-gen-go-tkform
-go get github.com\ikaiguang\protoc-gen-go\cmd\protoc-gen-go-tkgrpc
+go get github.com/ikaiguang/protoc-gen-go/cmd/protoc-gen-go-tkform
+go get github.com/ikaiguang/protoc-gen-go/cmd/protoc-gen-go-tkgrpc
 
 # 添加环境变量 $GOSRCPATH $GOPBPATH
 # export GOSRCPATH=$GOPATH/src
