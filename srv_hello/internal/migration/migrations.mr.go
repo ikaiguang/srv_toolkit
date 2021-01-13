@@ -20,6 +20,7 @@ func Migrations() (err error) {
 	if err != nil {
 		return
 	}
+	defer func() { _ = dbmrdb.Close() }()
 
 	// 迁移 v1.0.1
 	err = dbmrv1p0p1.RunMigrations()
