@@ -41,3 +41,7 @@ protoc -I. -I$GOSRCPATH -I$GOPBPATH --go-tkform_out=. --go-tkform_opt=paths=sour
 kratos tool protoc --bm *.proto
 
 ```
+
+## 运行测试
+
+go run ./srv_hello/main.go
