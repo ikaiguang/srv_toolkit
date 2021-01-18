@@ -17,6 +17,9 @@ const (
 	ContentTypeJSON     = binding.MIMEJSON
 	ContentTypeJSONUtf8 = tkapp.ContentTypeJSON
 	ContentTypePB       = tkapp.ContentTypePB
+
+	_contentType = "Content-Type"
+	_userAgent   = "User-Agent"
 )
 
 const (
@@ -33,6 +36,7 @@ type RequestParam struct {
 
 	Timeout     time.Duration
 	ContentType string
+	UserAgent   string
 
 	NeedToken  bool
 	TokenKey   string
@@ -63,17 +67,33 @@ func ProtobufRequestParam() *RequestParam {
 	}
 }
 
-// Get get
-func Get(requestParam *RequestParam) (code int, bodyBytes []byte, err error) {
+// NewRequest .
+func NewRequest(method string, requestParam *RequestParam) (httpReq *http.Request, err error) {
 	// http
-	httpReq, err := http.NewRequest(http.MethodGet, requestParam.URL, nil)
+	httpReq, err = http.NewRequest(method, requestParam.URL, requestParam.Body)
 	if err != nil {
 		err = errors.WithStack(err)
 		return
 	}
-	httpReq.Header.Set("Content-Type", requestParam.ContentType)
+	httpReq.Header.Set(_contentType, requestParam.ContentType)
 	if requestParam.NeedToken {
 		httpReq.Header.Set(requestParam.TokenKey, requestParam.TokenValue)
+	}
+	httpReq.Header.Set(_userAgent, requestParam.UserAgent)
+
+	if requestParam.NeedToken {
+		httpReq.Header.Set(requestParam.TokenKey, requestParam.TokenValue)
+	}
+	return
+}
+
+// Get get
+func Get(requestParam *RequestParam) (code int, bodyBytes []byte, err error) {
+	// http
+	httpReq, err := NewRequest(http.MethodGet, requestParam)
+	if err != nil {
+		err = errors.WithStack(err)
+		return
 	}
 
 	// 超时
@@ -87,14 +107,10 @@ func Get(requestParam *RequestParam) (code int, bodyBytes []byte, err error) {
 // Post post
 func Post(requestParam *RequestParam) (httpCode int, bodyBytes []byte, err error) {
 	// http
-	httpReq, err := http.NewRequest(http.MethodPost, requestParam.URL, requestParam.Body)
+	httpReq, err := NewRequest(http.MethodPost, requestParam)
 	if err != nil {
 		err = errors.WithStack(err)
 		return
-	}
-	httpReq.Header.Set("Content-Type", requestParam.ContentType)
-	if requestParam.NeedToken {
-		httpReq.Header.Set(requestParam.TokenKey, requestParam.TokenValue)
 	}
 
 	// 超时
