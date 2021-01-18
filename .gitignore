@@ -2,6 +2,7 @@
 .vscode
 .DS_Store
 *.exe
+*.log
 
 # 附件
 attachment

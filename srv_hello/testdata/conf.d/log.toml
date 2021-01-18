@@ -1,0 +1,13 @@
+[Log]
+
+stdout = true
+dir = ""
+maxLogFile = 0
+rotateSize = 52428800 # 50<<20 = 50M
+v = 1
+# see log.SetFormat
+logFormat = ""
+# ext : text/json
+logFilename = "srv_hello"
+logShortCaller = true # caller
+logFormatter = "text"

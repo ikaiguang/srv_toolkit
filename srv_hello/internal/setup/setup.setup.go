@@ -113,7 +113,7 @@ func migrationDB() {
 	// 数据库迁移
 	err = dbmr.Migrations()
 	if err != nil {
-		tk.Exit(err)
+		tk.Fatal(err)
 	}
 }
 

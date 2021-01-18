@@ -1,0 +1,11 @@
+[Server]
+
+network = "tcp"
+addr = "0.0.0.0:19000"
+timeout = "1s"
+idleTimeout = "60s"
+maxLifeTime = "2h"
+forceCloseWait = "20s"
+keepAliveInterval = "60s"
+KeepAliveTimeout = "20s"
+logFlag = 1

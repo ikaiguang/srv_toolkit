@@ -35,7 +35,7 @@ func Setup(dbConf, section string) {
 	var err error
 	defer func() {
 		if err != nil {
-			tk.Exit(err)
+			tk.Fatal(err)
 		}
 	}()
 
