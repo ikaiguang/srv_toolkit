@@ -97,7 +97,7 @@ func initProduction(logConf, section string) (err error) {
 		logEncoder = zapcore.NewJSONEncoder(logEncoderCfg)
 	}
 	logLevel := zap.LevelEnablerFunc(func(lvl zapcore.Level) bool {
-		return lvl >= zapcore.InfoLevel
+		return lvl >= convertZapLv(cfg.V)
 	})
 	logWriter, err := getLogWriter(cfg)
 	if err != nil {
@@ -122,6 +122,24 @@ func initProduction(logConf, section string) (err error) {
 	logger = zap.New(core, zap.AddCaller())
 
 	return
+}
+
+// convertZapLv .
+func convertZapLv(logLv int32) zapcore.Level {
+	switch logLv {
+	case 0:
+		return zapcore.DebugLevel
+	case 1:
+		return zapcore.InfoLevel
+	case 2:
+		return zapcore.WarnLevel
+	case 3:
+		return zapcore.ErrorLevel
+	case 4:
+		return zapcore.FatalLevel
+	default:
+		return zapcore.DPanicLevel
+	}
 }
 
 // getLogWriter log writer
