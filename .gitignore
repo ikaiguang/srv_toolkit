@@ -4,12 +4,10 @@
 *.exe
 *.log
 
-# 附件
-attachment
-
 # 运行时
 attachments
 runtime
+static.d
 
 # hello
 srv_hello/.idea

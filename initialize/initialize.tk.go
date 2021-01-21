@@ -159,9 +159,9 @@ func InitPath() (err error) {
 	if err != nil {
 		if os.IsNotExist(err) {
 			err = errors.Errorf("cannot find config path : ./%s;\n\terror : %s", RelPathConfig, err.Error())
-			return
+		} else {
+			err = errors.WithStack(err)
 		}
-		err = errors.WithStack(err)
 		return
 	}
 	if !dirInfo.IsDir() {
@@ -179,9 +179,15 @@ func InitPath() (err error) {
 				err = errors.WithStack(err)
 				return
 			}
+			dirInfo, err = os.Stat(staticPath)
+			if err != nil {
+				err = errors.WithStack(err)
+				return
+			}
+		} else {
+			err = errors.WithStack(err)
+			return
 		}
-		err = errors.WithStack(err)
-		return
 	}
 	if !dirInfo.IsDir() {
 		err = errors.Errorf("Not a directory : %s", staticPath)
@@ -198,9 +204,15 @@ func InitPath() (err error) {
 				err = errors.WithStack(err)
 				return
 			}
+			dirInfo, err = os.Stat(runtimePath)
+			if err != nil {
+				err = errors.WithStack(err)
+				return
+			}
+		} else {
+			err = errors.WithStack(err)
+			return
 		}
-		err = errors.WithStack(err)
-		return
 	}
 	if !dirInfo.IsDir() {
 		err = errors.Errorf("Not a directory : %s", runtimePath)
@@ -217,9 +229,15 @@ func InitPath() (err error) {
 				err = errors.WithStack(err)
 				return
 			}
+			dirInfo, err = os.Stat(logPath)
+			if err != nil {
+				err = errors.WithStack(err)
+				return
+			}
+		} else {
+			err = errors.WithStack(err)
+			return
 		}
-		err = errors.WithStack(err)
-		return
 	}
 	if !dirInfo.IsDir() {
 		err = errors.Errorf("Not a directory : %s", logPath)
@@ -236,9 +254,15 @@ func InitPath() (err error) {
 				err = errors.WithStack(err)
 				return
 			}
+			dirInfo, err = os.Stat(attachmentsPath)
+			if err != nil {
+				err = errors.WithStack(err)
+				return
+			}
+		} else {
+			err = errors.WithStack(err)
+			return
 		}
-		err = errors.WithStack(err)
-		return
 	}
 	if !dirInfo.IsDir() {
 		err = errors.Errorf("Not a directory : %s", attachmentsPath)
