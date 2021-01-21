@@ -4,6 +4,7 @@ import (
 	"fmt"
 	tklog "github.com/ikaiguang/srv_toolkit/log"
 	dbmrdb "github.com/ikaiguang/srv_toolkit/srv_hello/internal/migration/database"
+	testmodels "github.com/ikaiguang/srv_toolkit/srv_hello/internal/model/test"
 	"github.com/pkg/errors"
 )
 
@@ -13,7 +14,8 @@ type Test struct{}
 // CreateTable
 func (t *Test) CreateTable() (err error) {
 	// table name
-	tableName := "srv_test"
+	tableName := testmodels.TestModel.TableName()
+	tklog.Info("数据库迁移：检查表：" + tableName)
 	if dbmrdb.DB().Migrator().HasTable(tableName) {
 		return
 	}

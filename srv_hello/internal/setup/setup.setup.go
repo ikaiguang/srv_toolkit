@@ -15,6 +15,7 @@ import (
 	tkredis "github.com/ikaiguang/srv_toolkit/redis"
 	dbmr "github.com/ikaiguang/srv_toolkit/srv_hello/internal/migration"
 	dbmrdb "github.com/ikaiguang/srv_toolkit/srv_hello/internal/migration/database"
+	models "github.com/ikaiguang/srv_toolkit/srv_hello/internal/model"
 	routes "github.com/ikaiguang/srv_toolkit/srv_hello/internal/route"
 	tk "github.com/ikaiguang/srv_toolkit/toolkit"
 	"os"
@@ -90,11 +91,14 @@ func Setup() {
 	// 初始化memcached
 	tkmc.Setup("memcached.toml", "Client")
 
-	// 数据迁移
-	migrationDB()
-
 	// 初始化数据库
 	tkdb.Setup("db.toml", "Client")
+
+	// 模型初始化
+	models.Setup()
+
+	// 数据迁移
+	migrationDB()
 }
 
 // migrationDB 数据库 运行迁移，请初始化下面的配置
