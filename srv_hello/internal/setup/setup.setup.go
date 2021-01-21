@@ -89,10 +89,8 @@ func Setup() {
 	// 初始化memcached
 	//tkmc.Setup("memcached.toml", "Client")
 
-	// 初始化数据库迁移
+	// 初始化数据库迁移 & 创建数据库
 	dbmr.Setup("db.toml", "Migration")
-
-	// 创建数据库
 	createDB()
 
 	// 初始化数据库
