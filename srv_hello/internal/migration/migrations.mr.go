@@ -5,15 +5,25 @@ import (
 	dbmrv1p0p1 "github.com/ikaiguang/srv_toolkit/srv_hello/internal/migration/v1.0.1"
 )
 
-// Migrations 运行迁移，请初始化下面的配置
-// flagpkg.Setup()   // 初始化参数
-// configpkg.Setup() // 初始化配置
-func Migrations() (err error) {
+// Setup .
+func Setup(dbConfFile, section string) {
+	dbmrdb.Setup(dbConfFile, section)
+}
+
+// CreateDB 创建数据库
+func CreateDB() (err error) {
 	// 创建数据库
 	err = dbmrdb.CreateDB()
 	if err != nil {
 		return
 	}
+	return
+}
+
+// Migrations 运行迁移，请初始化下面的配置
+// flagpkg.Setup()   // 初始化参数
+// configpkg.Setup() // 初始化配置
+func Migrations() (err error) {
 
 	// 重建数据库连接：切换到数据库
 	err = dbmrdb.RebuildDBConn()

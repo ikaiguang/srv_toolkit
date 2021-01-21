@@ -11,10 +11,8 @@ import (
 	tkhttp "github.com/ikaiguang/srv_toolkit/http"
 	tkinit "github.com/ikaiguang/srv_toolkit/initialize"
 	tklog "github.com/ikaiguang/srv_toolkit/log"
-	tkmc "github.com/ikaiguang/srv_toolkit/memcached"
 	tkredis "github.com/ikaiguang/srv_toolkit/redis"
 	dbmr "github.com/ikaiguang/srv_toolkit/srv_hello/internal/migration"
-	dbmrdb "github.com/ikaiguang/srv_toolkit/srv_hello/internal/migration/database"
 	models "github.com/ikaiguang/srv_toolkit/srv_hello/internal/model"
 	routes "github.com/ikaiguang/srv_toolkit/srv_hello/internal/route"
 	tk "github.com/ikaiguang/srv_toolkit/toolkit"
@@ -89,30 +87,36 @@ func Setup() {
 	// 初始化redis
 	tkredis.Setup("redis.toml", "Client")
 	// 初始化memcached
-	tkmc.Setup("memcached.toml", "Client")
+	//tkmc.Setup("memcached.toml", "Client")
+
+	// 初始化数据库迁移
+	dbmr.Setup("db.toml", "Migration")
+
+	// 创建数据库
+	createDB()
 
 	// 初始化数据库
 	tkdb.Setup("db.toml", "Client")
-
-	// 模型初始化
 	models.Setup()
 
 	// 数据迁移
 	migrationDB()
 }
 
-// migrationDB 数据库 运行迁移，请初始化下面的配置
-func migrationDB() {
+// createDB 数据库 运行迁移，请初始化数据库迁移连接
+func createDB() {
 	var err error
 
-	// 初始化数据库迁移
-	dbmrdb.Setup("db.toml", "Migration")
-	defer func() {
-		deferErr := dbmrdb.Close()
-		if deferErr != nil {
-			tklog.ERROR(err)
-		}
-	}()
+	// 数据库
+	err = dbmr.CreateDB()
+	if err != nil {
+		tk.Fatal(err)
+	}
+}
+
+// migrationDB 数据库 运行迁移，请初始化数据库迁移连接
+func migrationDB() {
+	var err error
 
 	// 数据库迁移
 	err = dbmr.Migrations()

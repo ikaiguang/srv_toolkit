@@ -82,6 +82,10 @@ func RebuildDBConn() (err error) {
 
 // rebuildDBConn .
 func rebuildDBConn(cfg *Config) (db *gorm.DB, err error) {
+	if dbConf == nil {
+		err = errors.New("dbConf is nil")
+		return
+	}
 	// 重建DSN
 	conf, err := mysqlDriver.ParseDSN(cfg.DSN)
 	if err != nil {
