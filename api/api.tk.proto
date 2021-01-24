@@ -11,8 +11,8 @@ import "google/protobuf/any.proto";
  * @apiDefine Response 响应
  *
  * @apiSuccess (响应) {int32} code 状态码
- * @apiSuccess (响应) {msg} msg 响应描述
- * @apiSuccess (响应) {msg} detail 消息详情
+ * @apiSuccess (响应) {string} msg 响应描述
+ * @apiSuccess (响应) {string} detail 消息详情
  *
  * @apiSuccess (响应) {google.protobuf.Any} data 响应数据
  *
@@ -20,9 +20,24 @@ import "google/protobuf/any.proto";
 
 // Response resp with google/protobuf/any.proto
 message Response {
-  int32 code = 1; // code
-  string msg = 2; // 响应描述
+  int32 code = 1;    // code
+  string msg = 2;    // 响应描述
   string detail = 3; // 消息详情
 
   google.protobuf.Any data = 4; // data
+}
+
+// Platform 平台标识
+enum Platform {
+  platform_unknown = 0; // 未知
+
+  // 平台
+  platform_computer = 1; // 电脑端
+  platform_mobile = 2;   // 移动端
+
+  // 设备
+  platform_desktop = 20; // 桌面
+  platform_android = 21; // 安卓
+  platform_iphone = 22;  // 苹果
+  platform_pad = 23;     // 平板
 }
