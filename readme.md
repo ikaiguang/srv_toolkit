@@ -2,6 +2,9 @@
 
 toolkit for srv
 
+- google.golang.org/protobuf v1.25.0
+- google.golang.org/grpc v1.29.1
+
 ## protobuf
 
 protoc-gen-go google.golang.org/protobuf@v1.25.0
