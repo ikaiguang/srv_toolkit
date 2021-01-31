@@ -12,7 +12,7 @@ import "github.com/ikaiguang/srv_toolkit/api/api.tk.proto";
  * @apiDefine JwtAuthInfo 授权信息
  *
  * @apiSuccess (响应) {string} token_id 授权id
- * @apiSuccess (响应) {tkpb.Platform} platform 平台
+ * @apiSuccess (响应) {tkpb.Platform} platform 平台信息
  * @apiSuccess (响应) {int64} et 失效时间(时间戳:秒)
  * @apiSuccess (响应) {int64} ct 创建时间(时间戳:秒)
  * @apiSuccess (响应) {int64} mt 修改时间(时间戳:秒)
@@ -22,45 +22,39 @@ import "github.com/ikaiguang/srv_toolkit/api/api.tk.proto";
 // JwtAuthInfo token auth info
 message JwtAuthInfo {
   string token_id = 1;        // 授权id
-  tkpb.Platform platform = 2; // 平台
+  tkpb.Platform platform = 2; // 平台信息
   int64 et = 3;               // 失效时间(时间戳:秒)
   int64 ct = 4;               // 创建时间(时间戳:秒)
   int64 mt = 5;               // 修改时间(时间戳:秒)
 }
 
-// JwtAuthPlatformInfo 平台信息
-message JwtAuthPlatformInfo {
-  tkpb.Platform platform = 1; // 平台
-  int64 last_time = 2;        // 最后登录时间(时间戳:秒)
-}
-
 /**
  *
- * @apiDefine JwtAdminInfo 管理员信息
+ * @apiDefine JwtUserInfo 用户信息
  *
- * @apiSuccess (管理员信息) {int63} id 用户id
- * @apiSuccess (管理员信息) {string} uuid 用户uuid
- * @apiSuccess (管理员信息) {string} username 用户名
- * @apiSuccess (管理员信息) {string} nickname 昵称
- * @apiSuccess (管理员信息) {string} phone 电话号码
+ * @apiSuccess (用户信息) {int63} id 用户id
+ * @apiSuccess (用户信息) {string} uuid 用户uuid
+ * @apiSuccess (用户信息) {string} username 用户名
+ * @apiSuccess (用户信息) {string} nickname 昵称
+ * @apiSuccess (用户信息) {string} phone 电话号码
+ * @apiSuccess (用户信息) {JwtActiveStatus} user_status 用户状态
  *
- * @apiSuccess (管理员信息) {google.protobuf.Any} any any
- * @apiSuccess (管理员信息) {JwtActiveStatus} token_status // 活动状态
- * @apiSuccess (管理员信息) {string} token_secret 授权密码
+ * @apiSuccess (用户信息) {google.protobuf.Any} any any
+ * @apiSuccess (用户信息) {string} token_secret 授权密码
  *
  */
 
-// JwtAdminInfo 管理员信息
-message JwtAdminInfo {
-  int64 id = 1;        // 用户id
-  string uuid = 2;     // 用户uuid
-  string username = 3; // 用户名
-  string nickname = 4; // 昵称
-  string phone = 5;    // 电话号码
+// JwtUserInfo 用户信息
+message JwtUserInfo {
+  int64 id = 1;                    // 用户id
+  string uuid = 2;                 // 用户uuid
+  string username = 3;             // 用户名
+  string nickname = 4;             // 昵称
+  string phone = 5;                // 电话号码
+  JwtActiveStatus user_status = 6; // 用户状态
 
-  google.protobuf.Any any = 99;       // any
-  JwtActiveStatus token_status = 100; // 活动状态
-  string token_secret = 101;          // 授权密码
+  google.protobuf.Any any = 99; // any
+  string token_secret = 100;    // 授权密码
 }
 
 // JwtActiveStatus 活动状态
@@ -72,4 +66,12 @@ enum JwtActiveStatus {
   active_status_deny = 4;    // 黑名单(非法登录)
   active_status_deleted = 5; // 软删除(无效用户)
   active_status_invalid = 6; // 无效的(无效用户)
+}
+
+// JwtLoginType .
+enum JwtLoginType {
+  login_type_unknown = 0;      // 未知
+  login_type_only_one = 1;     // 同一账户仅允许登录一次(验证码...可强制登录)
+  login_type_platform_one = 2; // 同一账户每个平台都可登录一次(验证码...可强制登录)
+  login_type_multiple = 3;     // 无限制
 }

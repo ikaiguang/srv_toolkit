@@ -31,6 +31,12 @@ const (
 	SmsCodeLimit      Code = 10016 // 短信验证码获取已达限制
 	SmsCodeEmpty      Code = 10017 // 请输入验证码
 	SmsCodeErr        Code = 10018 // 验证码不正确
+	JwtAckUnknown     Code = 10019 // 登录参数有误
+	JwtAckDeny        Code = 10020 // 非法登录
+	JwtAckDeleted     Code = 10021 // 无效用户
+	JwtAckInvalid     Code = 10022 // 请先激活账户
+	JwtParamErr       Code = 10023 // JWT参数有误
+	JwtAudienceEmpty  Code = 10024 // 请填写JWT签发的目标收件人
 )
 
 /*
