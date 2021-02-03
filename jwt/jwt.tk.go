@@ -6,6 +6,7 @@ import (
 	tkpb "github.com/ikaiguang/srv_toolkit/api"
 	tkjwtpb "github.com/ikaiguang/srv_toolkit/api/jwt"
 	tke "github.com/ikaiguang/srv_toolkit/error"
+	tkredis "github.com/ikaiguang/srv_toolkit/redis"
 )
 
 // const
@@ -24,6 +25,12 @@ type LoginParam struct {
 	Claims    *jwt.StandardClaims // claims.Audience 用于redis缓存(必填)
 	Platform  tkpb.Platform
 	LoginType tkjwtpb.JwtLoginType
+}
+
+// CacheKey .
+// @param @jwtAudience cache key
+func (s *jwtToken) CacheKey(jwtAudience string) string {
+	return tkredis.Key(jwtAudience)
 }
 
 // Login .
@@ -62,6 +69,6 @@ func (s *jwtToken) activeStatusError(status tkjwtpb.JwtActiveStatus) error {
 	case tkjwtpb.JwtActiveStatus_active_status_invalid:
 		return tke.New(tke.JwtAckInvalid)
 	default:
-		return nil
+		return tke.New(tke.JwtAckUnknown)
 	}
 }
