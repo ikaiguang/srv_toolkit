@@ -6,7 +6,7 @@ import (
 	tkpb "github.com/ikaiguang/srv_toolkit/api"
 	tkjwtpb "github.com/ikaiguang/srv_toolkit/api/jwt"
 	tke "github.com/ikaiguang/srv_toolkit/error"
-	tkredis "github.com/ikaiguang/srv_toolkit/redis"
+	tkredisutils "github.com/ikaiguang/srv_toolkit/redis/utils"
 )
 
 // const
@@ -30,7 +30,7 @@ type LoginParam struct {
 // CacheKey .
 // @param @jwtAudience cache key
 func (s *jwtToken) CacheKey(jwtAudience string) string {
-	return tkredis.Key(jwtAudience)
+	return tkredisutils.Key(jwtAudience)
 }
 
 // Login .
