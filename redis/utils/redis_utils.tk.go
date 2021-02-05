@@ -2,8 +2,8 @@ package tkredisutils
 
 import (
 	"context"
+	"github.com/go-kratos/kratos/pkg/cache/redis"
 	"github.com/go-kratos/kratos/pkg/conf/env"
-	tkredis "github.com/ikaiguang/srv_toolkit/redis"
 	"github.com/pkg/errors"
 	"sync"
 	"time"
@@ -11,9 +11,15 @@ import (
 
 // key
 var (
+	_client    *redis.Redis
 	_keyPrefix string
 	_keyOnce   sync.Once
 )
+
+// SetConn .
+func SetConn(pool *redis.Redis) {
+	_client = pool
+}
 
 // usePrecise .
 func usePrecise(dur time.Duration) bool {
@@ -60,35 +66,35 @@ func Key(key string) string {
 // Command .
 // 命令用于返回所有的Redis命令的详细信息，以数组形式展示。
 func Command(ctx context.Context) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "command")
+	reply, err = _client.Do(ctx, "command")
 	return
 }
 
 // ClientGetName .
 // 命令用于返回 CLIENT SETNAME 命令为连接设置的名字。 因为新创建的连接默认是没有名字的， 对于没有名字的连接， CLIENT GETNAME 返回空白回复。
 func ClientGetName(ctx context.Context) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "client", "getname")
+	reply, err = _client.Do(ctx, "client", "getname")
 	return
 }
 
 // Echo .
 // Redis Echo 命令用于打印给定的字符串。
 func Echo(ctx context.Context, message interface{}) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "echo", message)
+	reply, err = _client.Do(ctx, "echo", message)
 	return
 }
 
 // Ping .
 // Redis Ping 命令使用客户端向 Redis 服务器发送一个 PING ，如果服务器运作正常的话，会返回一个 PONG 。
 func Ping(ctx context.Context) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "ping")
+	reply, err = _client.Do(ctx, "ping")
 	return
 }
 
 // Quit .
 // not implemented
 func Quit(ctx context.Context) (reply interface{}, err error) {
-	//reply, err = tkredis.Redis().Do(ctx, "quit")
+	//reply, err = _client.Do(ctx, "quit")
 	err = errors.New("not implemented")
 	return
 }
@@ -96,7 +102,7 @@ func Quit(ctx context.Context) (reply interface{}, err error) {
 // Del .
 // Redis DEL 命令用于删除已存在的键。不存在的 key 会被忽略。
 func Del(ctx context.Context, keys ...interface{}) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "del", keys...)
+	reply, err = _client.Do(ctx, "del", keys...)
 	return
 }
 
@@ -105,42 +111,42 @@ func Del(ctx context.Context, keys ...interface{}) (reply interface{}, err error
 // 但是，相比DEL会产生阻塞，该命令会在另一个线程中回收内存，因此它是非阻塞的。
 // 这也是该命令名字的由来：仅将keys从keyspace元数据中删除，真正的删除会在后续异步操作。
 func Unlink(ctx context.Context, keys ...interface{}) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "unlink", keys...)
+	reply, err = _client.Do(ctx, "unlink", keys...)
 	return
 }
 
 // Dump .
 // Redis DUMP 命令用于序列化给定 key ，并返回被序列化的值。
 func Dump(ctx context.Context, key interface{}) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "dump", key)
+	reply, err = _client.Do(ctx, "dump", key)
 	return
 }
 
 // Exists .
 // Redis EXISTS 命令用于检查给定 key 是否存在。
 func Exists(ctx context.Context, keys ...interface{}) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "exists", keys...)
+	reply, err = _client.Do(ctx, "exists", keys...)
 	return
 }
 
 // Expire .
 // Redis Expire 命令用于设置 key 的过期时间，key 过期后将不再可用。单位以秒计。
 func Expire(ctx context.Context, key string, expiration time.Duration) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "expire", key, formatSec(expiration))
+	reply, err = _client.Do(ctx, "expire", key, formatSec(expiration))
 	return
 }
 
 // ExpireAt .
 // Redis Expireat 命令用于以 UNIX 时间戳(unix timestamp)格式设置 key 的过期时间。key 过期后将不再可用。
 func ExpireAt(ctx context.Context, key string, tm time.Time) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "expireat", key, tm.Unix())
+	reply, err = _client.Do(ctx, "expireat", key, tm.Unix())
 	return
 }
 
 // Keys .
 // Redis Keys 命令用于查找所有符合给定模式 pattern 的 key 。。
 func Keys(ctx context.Context, pattern string) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "keys", pattern)
+	reply, err = _client.Do(ctx, "keys", pattern)
 	return
 }
 
@@ -148,7 +154,7 @@ func Keys(ctx context.Context, pattern string) (reply interface{}, err error) {
 // 将 key 原子性地从当前实例传送到目标实例的指定数据库上，一旦传送成功， key 保证会出现在目标实例上，而当前实例上的 key 会被删除。
 // 这个命令是一个原子操作，它在执行的时候会阻塞进行迁移的两个实例，直到以下任意结果发生：迁移成功，迁移失败，等到超时。
 func Migrate(ctx context.Context, host, port, key string, db int64, timeout time.Duration) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "migrate",
+	reply, err = _client.Do(ctx, "migrate",
 		host,
 		port,
 		key,
@@ -161,7 +167,7 @@ func Migrate(ctx context.Context, host, port, key string, db int64, timeout time
 // Move .
 // Redis MOVE 命令用于将当前数据库的 key 移动到给定的数据库 db 当中。
 func Move(ctx context.Context, key string, db int64) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "move", key, db)
+	reply, err = _client.Do(ctx, "move", key, db)
 	return
 }
 
@@ -169,7 +175,7 @@ func Move(ctx context.Context, key string, db int64) (reply interface{}, err err
 // OBJECT REFCOUNT 该命令主要用于调试(debugging)，它能够返回指定key所对应value被引用的次数.
 // OBJECT REFCOUNT <key> 返回给定 key 引用所储存的值的次数。此命令主要用于除错。
 func ObjectRefCount(ctx context.Context, key string) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "object", "refcount", key)
+	reply, err = _client.Do(ctx, "object", "refcount", key)
 	return
 }
 
@@ -182,35 +188,35 @@ func ObjectRefCount(ctx context.Context, key string) (reply interface{}, err err
 // 哈希表可以编码为 zipmap 或者 hashtable 。 zipmap 是小哈希表的特殊表示。
 // 有序集合可以被编码为 ziplist 或者 skiplist 格式。 ziplist 用于表示小的有序集合，而 skiplist 则用于表示任何大小的有序集合。
 func ObjectEncoding(ctx context.Context, key string) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "object", "encoding", key)
+	reply, err = _client.Do(ctx, "object", "encoding", key)
 	return
 }
 
 // ObjectIdleTime .
 // OBJECT IDLETIME <key> 返回给定 key 自储存以来的空转时间(idle， 没有被读取也没有被写入)，以秒为单位。
 func ObjectIdleTime(ctx context.Context, key string) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "object", "idletime", key)
+	reply, err = _client.Do(ctx, "object", "idletime", key)
 	return
 }
 
 // Persist .
 // Redis PERSIST 命令用于移除给定 key 的过期时间，使得 key 永不过期。
 func Persist(ctx context.Context, key string) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "persist", key)
+	reply, err = _client.Do(ctx, "persist", key)
 	return
 }
 
 // PExpire .
 // Redis PEXPIRE 命令和 EXPIRE 命令的作用类似，但是它以毫秒为单位设置 key 的生存时间，而不像 EXPIRE 命令那样，以秒为单位。
 func PExpire(ctx context.Context, key string, expiration time.Duration) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "pexpire", key, formatMs(expiration))
+	reply, err = _client.Do(ctx, "pexpire", key, formatMs(expiration))
 	return
 }
 
 // PExpireAt .
 // Redis PEXPIREAT 命令用于设置 key 的过期时间，以毫秒计。key 过期后将不再可用。
 func PExpireAt(ctx context.Context, key string, tm time.Time) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "pexpireat",
+	reply, err = _client.Do(ctx, "pexpireat",
 		key,
 		tm.UnixNano()/int64(time.Millisecond),
 	)
@@ -220,28 +226,28 @@ func PExpireAt(ctx context.Context, key string, tm time.Time) (reply interface{}
 // PTTL .
 // Redis Pttl 命令以毫秒为单位返回 key 的剩余过期时间。
 func PTTL(ctx context.Context, key string) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "pttl", key)
+	reply, err = _client.Do(ctx, "pttl", key)
 	return
 }
 
 // RandomKey .
 // Redis RANDOMKEY 命令从当前数据库中随机返回一个 key 。
 func RandomKey(ctx context.Context) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "randomkey")
+	reply, err = _client.Do(ctx, "randomkey")
 	return
 }
 
 // Rename .
 // Redis Rename 命令用于修改 key 的名称 。
 func Rename(ctx context.Context, key, newkey string) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "rename", key, newkey)
+	reply, err = _client.Do(ctx, "rename", key, newkey)
 	return
 }
 
 // RenameNX .
 // Redis Renamenx 命令用于在新的 key 不存在时修改 key 的名称 。
 func RenameNX(ctx context.Context, key, newkey string) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "renamenx", key, newkey)
+	reply, err = _client.Do(ctx, "renamenx", key, newkey)
 	return
 }
 
@@ -249,7 +255,7 @@ func RenameNX(ctx context.Context, key, newkey string) (reply interface{}, err e
 // 反序列化给定的序列化值，并将它和给定的 key 关联。
 // 那么使用反序列化得出的值来代替键 key 原有的值； 相反地， 如果键 key 已经存在， 但是没有给定 REPLACE 选项， 那么命令返回一个错误。
 func Restore(ctx context.Context, key string, ttl time.Duration, value string) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "restore", key, formatMs(ttl), value)
+	reply, err = _client.Do(ctx, "restore", key, formatMs(ttl), value)
 	return
 }
 
@@ -257,7 +263,7 @@ func Restore(ctx context.Context, key string, ttl time.Duration, value string) (
 // 反序列化给定的序列化值，并将它和给定的 key 关联。
 // 那么使用反序列化得出的值来代替键 key 原有的值； 相反地， 如果键 key 已经存在， 但是没有给定 REPLACE 选项， 那么命令返回一个错误。
 func RestoreReplace(ctx context.Context, key string, ttl time.Duration, value string) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "restore",
+	reply, err = _client.Do(ctx, "restore",
 		key,
 		formatMs(ttl),
 		value,
@@ -301,7 +307,7 @@ func (sort *SortArgs) args(key string) []interface{} {
 // redis支持对list，set，sorted set、hash元素（元素可以为数值与字符串）的排序。
 // sort key [BY pattern] [LIMIT start count] [GET pattern] [ASC|DESC] [ALPHA] [STORE dstkey]
 func Sort(ctx context.Context, key string, sort *SortArgs) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "sort", sort.args(key)...)
+	reply, err = _client.Do(ctx, "sort", sort.args(key)...)
 	return
 }
 
@@ -314,7 +320,7 @@ func SortStore(ctx context.Context, key, store string, sort *SortArgs) (reply in
 	if store != "" {
 		args = append(args, "store", store)
 	}
-	reply, err = tkredis.Redis().Do(ctx, "sort", args...)
+	reply, err = _client.Do(ctx, "sort", args...)
 	return
 }
 
@@ -322,28 +328,28 @@ func SortStore(ctx context.Context, key, store string, sort *SortArgs) (reply in
 // redis支持对list，set，sorted set、hash元素（元素可以为数值与字符串）的排序。
 // sort key [BY pattern] [LIMIT start count] [GET pattern] [ASC|DESC] [ALPHA] [STORE dstkey]
 func SortInterfaces(ctx context.Context, key string, sort *SortArgs) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "sort", sort.args(key)...)
+	reply, err = _client.Do(ctx, "sort", sort.args(key)...)
 	return
 }
 
 // Touch .
 // 修改指定 key 的 最后访问时间。忽略不存在的 key。
 func Touch(ctx context.Context, keys ...interface{}) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "touch", keys...)
+	reply, err = _client.Do(ctx, "touch", keys...)
 	return
 }
 
 // TTL .
 // Redis TTL 命令以秒为单位返回 key 的剩余过期时间。
 func TTL(ctx context.Context, key string) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "ttl", key)
+	reply, err = _client.Do(ctx, "ttl", key)
 	return
 }
 
 // Type .
 // Redis Type 命令用于返回 key 所储存的值的类型。
 func Type(ctx context.Context, key string) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "type", key)
+	reply, err = _client.Do(ctx, "type", key)
 	return
 }
 
@@ -358,7 +364,7 @@ func Scan(ctx context.Context, cursor uint64, match string, count int64) (reply 
 	if count > 0 {
 		args = append(args, "count", count)
 	}
-	reply, err = tkredis.Redis().Do(ctx, "scan", args...)
+	reply, err = _client.Do(ctx, "scan", args...)
 	return
 }
 
@@ -372,7 +378,7 @@ func SScan(ctx context.Context, key string, cursor uint64, match string, count i
 	if count > 0 {
 		args = append(args, "count", count)
 	}
-	reply, err = tkredis.Redis().Do(ctx, "sscan", args...)
+	reply, err = _client.Do(ctx, "sscan", args...)
 	return
 }
 
@@ -386,7 +392,7 @@ func HScan(ctx context.Context, key string, cursor uint64, match string, count i
 	if count > 0 {
 		args = append(args, "count", count)
 	}
-	reply, err = tkredis.Redis().Do(ctx, "hscan", args...)
+	reply, err = _client.Do(ctx, "hscan", args...)
 	return
 }
 
@@ -400,7 +406,7 @@ func ZScan(ctx context.Context, key string, cursor uint64, match string, count i
 	if count > 0 {
 		args = append(args, "count", count)
 	}
-	reply, err = tkredis.Redis().Do(ctx, "zscan", args...)
+	reply, err = _client.Do(ctx, "zscan", args...)
 	return
 }
 
@@ -411,7 +417,7 @@ func ZScan(ctx context.Context, key string, cursor uint64, match string, count i
 // 如果 key 已经存在并且是一个字符串， APPEND 命令将 value 追加到 key 原来的值的末尾。
 // 如果 key 不存在， APPEND 就简单地将给定 key 设为 value ，就像执行 SET key value 一样。
 func Append(ctx context.Context, key, value string) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "append", key, value)
+	reply, err = _client.Do(ctx, "append", key, value)
 	return
 }
 
@@ -433,7 +439,7 @@ func BitCount(ctx context.Context, key string, bitCount *BitCountArgs) (reply in
 			bitCount.End,
 		)
 	}
-	reply, err = tkredis.Redis().Do(ctx, "bitcount", args...)
+	reply, err = _client.Do(ctx, "bitcount", args...)
 	return
 }
 
@@ -452,7 +458,7 @@ func bitOp(op, destKey string, keys ...string) []interface{} {
 // BITOP AND destkey key [key ...]  ，对一个或多个key求逻辑并，并将结果保存到destkey
 func BitOpAnd(ctx context.Context, destKey string, keys ...string) (reply interface{}, err error) {
 	args := bitOp("and", destKey, keys...)
-	reply, err = tkredis.Redis().Do(ctx, "bitop", args...)
+	reply, err = _client.Do(ctx, "bitop", args...)
 	return
 }
 
@@ -460,7 +466,7 @@ func BitOpAnd(ctx context.Context, destKey string, keys ...string) (reply interf
 // BITOP OR destkey key [key ...] ，对一个或多个key求逻辑或，并将结果保存到destkey
 func BitOpOr(ctx context.Context, destKey string, keys ...string) (reply interface{}, err error) {
 	args := bitOp("or", destKey, keys...)
-	reply, err = tkredis.Redis().Do(ctx, "bitop", args...)
+	reply, err = _client.Do(ctx, "bitop", args...)
 	return
 }
 
@@ -468,7 +474,7 @@ func BitOpOr(ctx context.Context, destKey string, keys ...string) (reply interfa
 // BITOP XOR destkey key [key ...] ，对一个或多个key求逻辑异或，并将结果保存到destkey
 func BitOpXor(ctx context.Context, destKey string, keys ...string) (reply interface{}, err error) {
 	args := bitOp("xor", destKey, keys...)
-	reply, err = tkredis.Redis().Do(ctx, "bitop", args...)
+	reply, err = _client.Do(ctx, "bitop", args...)
 	return
 }
 
@@ -476,7 +482,7 @@ func BitOpXor(ctx context.Context, destKey string, keys ...string) (reply interf
 // BITOP NOT destkey key ，对给定key求逻辑非，并将结果保存到destkey
 func BitOpNot(ctx context.Context, destKey string, keys ...string) (reply interface{}, err error) {
 	args := bitOp("not", destKey, keys...)
-	reply, err = tkredis.Redis().Do(ctx, "bitop", args...)
+	reply, err = _client.Do(ctx, "bitop", args...)
 	return
 }
 
@@ -496,7 +502,7 @@ func BitPos(ctx context.Context, key string, bit int64, pos ...int64) (reply int
 	default:
 		panic("too many arguments")
 	}
-	reply, err = tkredis.Redis().Do(ctx, "bitpos", args...)
+	reply, err = _client.Do(ctx, "bitpos", args...)
 	return
 }
 
@@ -506,7 +512,7 @@ func BitPos(ctx context.Context, key string, bit int64, pos ...int64) (reply int
 // 如果值包含错误的类型，或字符串类型的值不能表示为数字，那么返回一个错误。
 // 本操作的值限制在 64 位(bit)有符号数字表示之内。
 func Decr(ctx context.Context, key string) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "decr", key)
+	reply, err = _client.Do(ctx, "decr", key)
 	return
 }
 
@@ -516,35 +522,35 @@ func Decr(ctx context.Context, key string) (reply interface{}, err error) {
 // 如果值包含错误的类型，或字符串类型的值不能表示为数字，那么返回一个错误。
 // 本操作的值限制在 64 位(bit)有符号数字表示之内。
 func DecrBy(ctx context.Context, key string, decrement int64) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "decrby", key, decrement)
+	reply, err = _client.Do(ctx, "decrby", key, decrement)
 	return
 }
 
 // Get .
 // Redis Get 命令用于获取指定 key 的值。如果 key 不存在，返回 nil 。如果key 储存的值不是字符串类型，返回一个错误。
 func Get(ctx context.Context, key string) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "get", key)
+	reply, err = _client.Do(ctx, "get", key)
 	return
 }
 
 // GetBit .
 // Redis Getbit 命令用于对 key 所储存的字符串值，获取指定偏移量上的位(bit)。
 func GetBit(ctx context.Context, key string, offset int64) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "getbit", key, offset)
+	reply, err = _client.Do(ctx, "getbit", key, offset)
 	return
 }
 
 // GetRange .
 // Redis Getrange 命令用于获取存储在指定 key 中字符串的子字符串。字符串的截取范围由 start 和 end 两个偏移量决定(包括 start 和 end 在内)。
 func GetRange(ctx context.Context, key string, start, end int64) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "getrange", key, start, end)
+	reply, err = _client.Do(ctx, "getrange", key, start, end)
 	return
 }
 
 // GetSet .
 // Redis Getset 命令用于设置指定 key 的值，并返回 key 的旧值。
 func GetSet(ctx context.Context, key string, value interface{}) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "getset", key, value)
+	reply, err = _client.Do(ctx, "getset", key, value)
 	return
 }
 
@@ -554,7 +560,7 @@ func GetSet(ctx context.Context, key string, value interface{}) (reply interface
 // 如果值包含错误的类型，或字符串类型的值不能表示为数字，那么返回一个错误。
 // 本操作的值限制在 64 位(bit)有符号数字表示之内。
 func Incr(ctx context.Context, key string) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "incr", key)
+	reply, err = _client.Do(ctx, "incr", key)
 	return
 }
 
@@ -564,7 +570,7 @@ func Incr(ctx context.Context, key string) (reply interface{}, err error) {
 // 如果值包含错误的类型，或字符串类型的值不能表示为数字，那么返回一个错误。
 // 本操作的值限制在 64 位(bit)有符号数字表示之内。
 func IncrBy(ctx context.Context, key string, value int64) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "incrby", key, value)
+	reply, err = _client.Do(ctx, "incrby", key, value)
 	return
 }
 
@@ -572,7 +578,7 @@ func IncrBy(ctx context.Context, key string, value int64) (reply interface{}, er
 // Redis Incrbyfloat 命令为 key 中所储存的值加上指定的浮点数增量值。
 // 如果 key 不存在，那么 INCRBYFLOAT 会先将 key 的值设为 0 ，再执行加法操作。
 func IncrByFloat(ctx context.Context, key string, value float64) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "incrbyfloat", key, value)
+	reply, err = _client.Do(ctx, "incrbyfloat", key, value)
 	return
 }
 
@@ -596,7 +602,7 @@ func appendArgs(dst, src []interface{}) []interface{} {
 // MGet .
 // Redis Mget 命令返回所有(一个或多个)给定 key 的值。 如果给定的 key 里面，有某个 key 不存在，那么这个 key 返回特殊值 nil 。
 func MGet(ctx context.Context, keys ...interface{}) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "mget", keys...)
+	reply, err = _client.Do(ctx, "mget", keys...)
 	return
 }
 
@@ -605,7 +611,7 @@ func MGet(ctx context.Context, keys ...interface{}) (reply interface{}, err erro
 func MSet(ctx context.Context, pairs ...interface{}) (reply interface{}, err error) {
 	args := make([]interface{}, len(pairs))
 	args = appendArgs(args, pairs)
-	reply, err = tkredis.Redis().Do(ctx, "mset", args...)
+	reply, err = _client.Do(ctx, "mset", args...)
 	return
 }
 
@@ -615,7 +621,7 @@ func MSet(ctx context.Context, pairs ...interface{}) (reply interface{}, err err
 func MSetNX(ctx context.Context, pairs ...interface{}) (reply interface{}, err error) {
 	args := make([]interface{}, len(pairs))
 	args = appendArgs(args, pairs)
-	reply, err = tkredis.Redis().Do(ctx, "msetnx", args...)
+	reply, err = _client.Do(ctx, "msetnx", args...)
 	return
 }
 
@@ -632,14 +638,14 @@ func Set(ctx context.Context, key string, value interface{}, expiration time.Dur
 			args = append(args, "ex", formatSec(expiration))
 		}
 	}
-	reply, err = tkredis.Redis().Do(ctx, "set", args...)
+	reply, err = _client.Do(ctx, "set", args...)
 	return
 }
 
 // SetBit .
 // Redis Setbit 命令用于对 key 所储存的字符串值，设置或清除指定偏移量上的位(bit)。
 func SetBit(ctx context.Context, key string, offset int64, value int) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "setbit", key, offset, value)
+	reply, err = _client.Do(ctx, "setbit", key, offset, value)
 	return
 }
 
@@ -648,12 +654,12 @@ func SetBit(ctx context.Context, key string, offset int64, value int) (reply int
 func SetNX(ctx context.Context, key string, value interface{}, expiration time.Duration) (reply interface{}, err error) {
 	if expiration == 0 {
 		// Use old `SETNX` to support old Redis versions.
-		reply, err = tkredis.Redis().Do(ctx, "setnx", key, value)
+		reply, err = _client.Do(ctx, "setnx", key, value)
 	} else {
 		if usePrecise(expiration) {
-			reply, err = tkredis.Redis().Do(ctx, "set", key, value, "px", formatMs(expiration), "nx")
+			reply, err = _client.Do(ctx, "set", key, value, "px", formatMs(expiration), "nx")
 		} else {
-			reply, err = tkredis.Redis().Do(ctx, "set", key, value, "ex", formatMs(expiration), "nx")
+			reply, err = _client.Do(ctx, "set", key, value, "ex", formatMs(expiration), "nx")
 		}
 	}
 	return
@@ -666,12 +672,12 @@ func SetNX(ctx context.Context, key string, value interface{}, expiration time.D
 // XX ： 只在键已经存在时， 才对键进行设置操作。
 func SetXX(ctx context.Context, key string, value interface{}, expiration time.Duration) (reply interface{}, err error) {
 	if expiration == 0 {
-		reply, err = tkredis.Redis().Do(ctx, "set", key, value, "xx")
+		reply, err = _client.Do(ctx, "set", key, value, "xx")
 	} else {
 		if usePrecise(expiration) {
-			reply, err = tkredis.Redis().Do(ctx, "set", key, value, "px", formatMs(expiration), "xx")
+			reply, err = _client.Do(ctx, "set", key, value, "px", formatMs(expiration), "xx")
 		} else {
-			reply, err = tkredis.Redis().Do(ctx, "set", key, value, "ex", formatSec(expiration), "xx")
+			reply, err = _client.Do(ctx, "set", key, value, "ex", formatSec(expiration), "xx")
 		}
 	}
 	return
@@ -680,14 +686,14 @@ func SetXX(ctx context.Context, key string, value interface{}, expiration time.D
 // SetRange .
 // Redis Setrange 命令用指定的字符串覆盖给定 key 所储存的字符串值，覆盖的位置从偏移量 offset 开始。
 func SetRange(ctx context.Context, key string, offset int64, value string) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "setrange", key, offset, value)
+	reply, err = _client.Do(ctx, "setrange", key, offset, value)
 	return
 }
 
 // StrLen .
 // Redis Strlen 命令用于获取指定 key 所储存的字符串值的长度。当 key 储存的不是字符串值时，返回一个错误。
 func StrLen(ctx context.Context, key string) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "strlen", key)
+	reply, err = _client.Do(ctx, "strlen", key)
 	return
 }
 
@@ -701,21 +707,21 @@ func HDel(ctx context.Context, key string, fields ...string) (reply interface{},
 	for i, field := range fields {
 		args[1+i] = field
 	}
-	reply, err = tkredis.Redis().Do(ctx, "hdel", args...)
+	reply, err = _client.Do(ctx, "hdel", args...)
 	return
 }
 
 // HExists .
 // Redis Hexists 命令用于查看哈希表的指定字段是否存在。
 func HExists(ctx context.Context, key string, field string) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "hexists", key, field)
+	reply, err = _client.Do(ctx, "hexists", key, field)
 	return
 }
 
 // HGet .
 // Redis Hget 命令用于返回哈希表中指定字段的值。
 func HGet(ctx context.Context, key string, field string) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "hget", key, field)
+	reply, err = _client.Do(ctx, "hget", key, field)
 	return
 }
 
@@ -723,7 +729,7 @@ func HGet(ctx context.Context, key string, field string) (reply interface{}, err
 // Redis Hgetall 命令用于返回哈希表中，所有的字段和值。
 // 在返回值里，紧跟每个字段名(field name)之后是字段的值(value)，所以返回值的长度是哈希表大小的两倍
 func HGetAll(ctx context.Context, key string) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "hgetall", key)
+	reply, err = _client.Do(ctx, "hgetall", key)
 	return
 }
 
@@ -735,7 +741,7 @@ func HGetAll(ctx context.Context, key string) (reply interface{}, err error) {
 // 对一个储存字符串值的字段执行 HINCRBY 命令将造成一个错误。
 // 本操作的值被限制在 64 位(bit)有符号数字表示之内。
 func HIncrBy(ctx context.Context, key, field string, incr int64) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "hincrby", key, field, incr)
+	reply, err = _client.Do(ctx, "hincrby", key, field, incr)
 	return
 }
 
@@ -743,21 +749,21 @@ func HIncrBy(ctx context.Context, key, field string, incr int64) (reply interfac
 // Redis Hincrbyfloat 命令用于为哈希表中的字段值加上指定浮点数增量值。
 // 如果指定的字段不存在，那么在执行命令前，字段的值被初始化为 0
 func HIncrByFloat(ctx context.Context, key, field string, incr float64) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "hincrbyfloat", key, field, incr)
+	reply, err = _client.Do(ctx, "hincrbyfloat", key, field, incr)
 	return
 }
 
 // HKeys .
 // Redis Hkeys 命令用于获取哈希表中的所有域（field）。
 func HKeys(ctx context.Context, key string) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "hkeys", key)
+	reply, err = _client.Do(ctx, "hkeys", key)
 	return
 }
 
 // HLen .
 // Redis Hlen 命令用于获取哈希表中字段的数量。
 func HLen(ctx context.Context, key string) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "hlen", key)
+	reply, err = _client.Do(ctx, "hlen", key)
 	return
 }
 
@@ -770,7 +776,7 @@ func HMGet(ctx context.Context, key string, fields ...string) (reply interface{}
 	for i, field := range fields {
 		args[1+i] = field
 	}
-	reply, err = tkredis.Redis().Do(ctx, "hmget", args...)
+	reply, err = _client.Do(ctx, "hmget", args...)
 	return
 }
 
@@ -787,7 +793,7 @@ func HMSet(ctx context.Context, key string, fields map[string]interface{}) (repl
 		args[i+1] = v
 		i += 2
 	}
-	reply, err = tkredis.Redis().Do(ctx, "hmset", args...)
+	reply, err = _client.Do(ctx, "hmset", args...)
 	return
 }
 
@@ -796,7 +802,7 @@ func HMSet(ctx context.Context, key string, fields map[string]interface{}) (repl
 // 如果哈希表不存在，一个新的哈希表被创建并进行 HSET 操作。
 // 如果字段已经存在于哈希表中，旧值将被覆盖。
 func HSet(ctx context.Context, key, field string, value interface{}) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "hset", key, field, value)
+	reply, err = _client.Do(ctx, "hset", key, field, value)
 	return
 }
 
@@ -806,14 +812,14 @@ func HSet(ctx context.Context, key, field string, value interface{}) (reply inte
 // 如果字段已经存在于哈希表中，操作无效。
 // 如果 key 不存在，一个新哈希表被创建并执行 HSETNX 命令。
 func HSetNX(ctx context.Context, key, field string, value interface{}) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "hsetnx", key, field, value)
+	reply, err = _client.Do(ctx, "hsetnx", key, field, value)
 	return
 }
 
 // HVals .
 // Redis Hvals 命令返回哈希表所有域(field)的值。
 func HVals(ctx context.Context, key string) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "hvals", key)
+	reply, err = _client.Do(ctx, "hvals", key)
 	return
 }
 
@@ -829,7 +835,7 @@ func BLPop(ctx context.Context, timeout time.Duration, keys ...string) (reply in
 	args[len(args)-1] = formatSec(timeout)
 	//ctx, cancel := context.WithTimeout(ctx, timeout)
 	//defer cancel()
-	reply, err = tkredis.Redis().Do(ctx, "blpop", args...)
+	reply, err = _client.Do(ctx, "blpop", args...)
 	return
 }
 
@@ -843,7 +849,7 @@ func BRPop(ctx context.Context, timeout time.Duration, keys ...string) (reply in
 	args[len(args)-1] = formatSec(timeout)
 	//ctx, cancel := context.WithTimeout(ctx, timeout)
 	//defer cancel()
-	reply, err = tkredis.Redis().Do(ctx, "brpop", args...)
+	reply, err = _client.Do(ctx, "brpop", args...)
 	return
 }
 
@@ -851,7 +857,7 @@ func BRPop(ctx context.Context, timeout time.Duration, keys ...string) (reply in
 // Redis Brpoplpush 命令从列表中取出最后一个元素，并插入到另外一个列表的头部； 如果列表没有元素会阻塞列表直到等待超时或发现可弹出元素为止。
 // 假如在指定时间内没有任何元素被弹出，则返回一个 nil 和等待时长。 反之，返回一个含有两个元素的列表，第一个元素是被弹出元素的值，第二个元素是等待时长。
 func BRPopLPush(ctx context.Context, source, destination string, timeout time.Duration) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "brpoplpush",
+	reply, err = _client.Do(ctx, "brpoplpush",
 		source,
 		destination,
 		formatSec(timeout),
@@ -862,7 +868,7 @@ func BRPopLPush(ctx context.Context, source, destination string, timeout time.Du
 // LIndex .
 // Redis Lindex 命令用于通过索引获取列表中的元素。你也可以使用负数下标，以 -1 表示列表的最后一个元素， -2 表示列表的倒数第二个元素，以此类推。
 func LIndex(ctx context.Context, key string, index int64) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "lindex", key, index)
+	reply, err = _client.Do(ctx, "lindex", key, index)
 	return
 }
 
@@ -872,7 +878,7 @@ func LIndex(ctx context.Context, key string, index int64) (reply interface{}, er
 // 如果 key 不是列表类型，返回一个错误。
 // LINSERT key BEFORE|AFTER pivot value
 func LInsert(ctx context.Context, key, op string, pivot, value interface{}) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "linsert", key, op, pivot, value)
+	reply, err = _client.Do(ctx, "linsert", key, op, pivot, value)
 	return
 }
 
@@ -882,7 +888,7 @@ func LInsert(ctx context.Context, key, op string, pivot, value interface{}) (rep
 // 如果 key 不是列表类型，返回一个错误。
 // LINSERT key BEFORE|AFTER pivot value
 func LInsertBefore(ctx context.Context, key, op string, pivot, value interface{}) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "linsert", key, "before", pivot, value)
+	reply, err = _client.Do(ctx, "linsert", key, "before", pivot, value)
 	return
 }
 
@@ -892,14 +898,14 @@ func LInsertBefore(ctx context.Context, key, op string, pivot, value interface{}
 // 如果 key 不是列表类型，返回一个错误。
 // LINSERT key BEFORE|AFTER pivot value
 func LInsertAfter(ctx context.Context, key, op string, pivot, value interface{}) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "linsert", key, "after", pivot, value)
+	reply, err = _client.Do(ctx, "linsert", key, "after", pivot, value)
 	return
 }
 
 // LLen .
 // Redis Llen 命令用于返回列表的长度。 如果列表 key 不存在，则 key 被解释为一个空列表，返回 0 。 如果 key 不是列表类型，返回一个错误。
 func LLen(ctx context.Context, key string) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "llen", key)
+	reply, err = _client.Do(ctx, "llen", key)
 	return
 }
 
@@ -907,7 +913,7 @@ func LLen(ctx context.Context, key string) (reply interface{}, err error) {
 // Redis Lpop 命令用于移除并返回列表的第一个元素。
 // 列表的第一个元素。 当列表 key 不存在时，返回 nil 。
 func LPop(ctx context.Context, key string) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "lpop", key)
+	reply, err = _client.Do(ctx, "lpop", key)
 	return
 }
 
@@ -918,14 +924,14 @@ func LPush(ctx context.Context, key string, values ...interface{}) (reply interf
 	args := make([]interface{}, 1, 1+len(values))
 	args[0] = key
 	args = appendArgs(args, values)
-	reply, err = tkredis.Redis().Do(ctx, "lpush", args...)
+	reply, err = _client.Do(ctx, "lpush", args...)
 	return
 }
 
 // LPushX .
 // Redis Lpushx 将一个值插入到已存在的列表头部，列表不存在时操作无效。
 func LPushX(ctx context.Context, key string, value interface{}) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "lpushx", key, value)
+	reply, err = _client.Do(ctx, "lpushx", key, value)
 	return
 }
 
@@ -934,7 +940,7 @@ func LPushX(ctx context.Context, key string, value interface{}) (reply interface
 // 其中 0 表示列表的第一个元素， 1 表示列表的第二个元素，以此类推。
 // 你也可以使用负数下标，以 -1 表示列表的最后一个元素， -2 表示列表的倒数第二个元素，以此类推。
 func LRange(ctx context.Context, key string, start, stop int64) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "lrange", key, start, stop)
+	reply, err = _client.Do(ctx, "lrange", key, start, stop)
 	return
 }
 
@@ -945,7 +951,7 @@ func LRange(ctx context.Context, key string, start, stop int64) (reply interface
 // count < 0 : 从表尾开始向表头搜索，移除与 VALUE 相等的元素，数量为 COUNT 的绝对值。
 // count = 0 : 移除表中所有与 VALUE 相等的值。
 func LRem(ctx context.Context, key string, count int64, value interface{}) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "lrem", key, count, value)
+	reply, err = _client.Do(ctx, "lrem", key, count, value)
 	return
 }
 
@@ -954,7 +960,7 @@ func LRem(ctx context.Context, key string, count int64, value interface{}) (repl
 // 当索引参数超出范围，或对一个空列表进行 LSET 时，返回一个错误。
 // 关于列表下标的更多信息，请参考 LINDEX 命令。
 func LSet(ctx context.Context, key string, index int64, value interface{}) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "lset", key, index, value)
+	reply, err = _client.Do(ctx, "lset", key, index, value)
 	return
 }
 
@@ -963,21 +969,21 @@ func LSet(ctx context.Context, key string, index int64, value interface{}) (repl
 // 下标 0 表示列表的第一个元素，以 1 表示列表的第二个元素，以此类推。
 // 你也可以使用负数下标，以 -1 表示列表的最后一个元素， -2 表示列表的倒数第二个元素，以此类推。
 func LTrim(ctx context.Context, key string, start, stop int64) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "ltrim", key, start, stop)
+	reply, err = _client.Do(ctx, "ltrim", key, start, stop)
 	return
 }
 
 // RPop .
 // Redis Rpop 命令用于移除列表的最后一个元素，返回值为移除的元素。
 func RPop(ctx context.Context, key string) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "rpop", key)
+	reply, err = _client.Do(ctx, "rpop", key)
 	return
 }
 
 // RPopLPush .
 // Redis Rpoplpush 命令用于移除列表的最后一个元素，并将该元素添加到另一个列表并返回。
 func RPopLPush(ctx context.Context, source, destination string) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "rpoplpush", source, destination)
+	reply, err = _client.Do(ctx, "rpoplpush", source, destination)
 	return
 }
 
@@ -989,14 +995,14 @@ func RPush(ctx context.Context, key string, values ...interface{}) (reply interf
 	args := make([]interface{}, 1, 1+len(values))
 	args[0] = key
 	args = appendArgs(args, values)
-	reply, err = tkredis.Redis().Do(ctx, "rpush", args...)
+	reply, err = _client.Do(ctx, "rpush", args...)
 	return
 }
 
 // RPushX .
 // Redis rpushx，命令用于将一个或多个值插入到已存在的列表尾部(最右边)，如果列表不存在，操作无效。
 func RPushX(ctx context.Context, key string, value interface{}) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "rpushx", key, value)
+	reply, err = _client.Do(ctx, "rpushx", key, value)
 	return
 }
 
@@ -1011,14 +1017,14 @@ func SAdd(ctx context.Context, key string, members ...interface{}) (reply interf
 	args := make([]interface{}, 1, 1+len(members))
 	args[0] = key
 	args = appendArgs(args, members)
-	reply, err = tkredis.Redis().Do(ctx, "sadd", args...)
+	reply, err = _client.Do(ctx, "sadd", args...)
 	return
 }
 
 // SCard .
 // Redis Scard 命令返回集合中元素的数量。
 func SCard(ctx context.Context, key string) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "scard", key)
+	reply, err = _client.Do(ctx, "scard", key)
 	return
 }
 
@@ -1026,7 +1032,7 @@ func SCard(ctx context.Context, key string) (reply interface{}, err error) {
 // Redis Sdiff 命令返回第一个集合与其他集合之间的差异，也可以认为说第一个集合中独有的元素。不存在的集合 key 将视为空集。
 // 差集的结果来自前面的 FIRST_KEY ,而不是后面的 OTHER_KEY1，也不是整个 FIRST_KEY OTHER_KEY1..OTHER_KEYN 的差集。
 func SDiff(ctx context.Context, keys ...interface{}) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "sdiff", keys...)
+	reply, err = _client.Do(ctx, "sdiff", keys...)
 	return
 }
 
@@ -1038,14 +1044,14 @@ func SDiffStore(ctx context.Context, destination string, keys ...string) (reply 
 	for i, key := range keys {
 		args[1+i] = key
 	}
-	reply, err = tkredis.Redis().Do(ctx, "sdiffstore", args...)
+	reply, err = _client.Do(ctx, "sdiffstore", args...)
 	return
 }
 
 // SInter .
 // Redis Sinter 命令返回给定所有给定集合的交集。 不存在的集合 key 被视为空集。 当给定集合当中有一个空集时，结果也为空集(根据集合运算定律)。
 func SInter(ctx context.Context, keys ...interface{}) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "sinter", keys...)
+	reply, err = _client.Do(ctx, "sinter", keys...)
 	return
 }
 
@@ -1057,21 +1063,21 @@ func SInterStore(ctx context.Context, destination string, keys ...string) (reply
 	for i, key := range keys {
 		args[1+i] = key
 	}
-	reply, err = tkredis.Redis().Do(ctx, "sinterstore", args...)
+	reply, err = _client.Do(ctx, "sinterstore", args...)
 	return
 }
 
 // SIsMember .
 // Redis Sismember 命令判断成员元素是否是集合的成员。
 func SIsMember(ctx context.Context, key string, member interface{}) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "sismember", key, member)
+	reply, err = _client.Do(ctx, "sismember", key, member)
 	return
 }
 
 // SMembers .
 // Redis Smembers 命令返回集合中的所有的成员。 不存在的集合 key 被视为空集合。
 func SMembers(ctx context.Context, key string) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "smembers", key)
+	reply, err = _client.Do(ctx, "smembers", key)
 	return
 }
 
@@ -1083,7 +1089,7 @@ func SMembers(ctx context.Context, key string) (reply interface{}, err error) {
 // 当 destination 集合已经包含 member 元素时， SMOVE 命令只是简单地将 source 集合中的 member 元素删除。
 // 当 source 或 destination 不是集合类型时，返回一个错误。
 func SMove(ctx context.Context, source, destination string, member interface{}) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "smove", source, destination, member)
+	reply, err = _client.Do(ctx, "smove", source, destination, member)
 	return
 }
 
@@ -1091,7 +1097,7 @@ func SMove(ctx context.Context, source, destination string, member interface{}) 
 // Redis Spop 命令用于移除集合中的指定 key 的一个或多个随机元素，移除后会返回移除的元素。
 // 该命令类似 Srandmember 命令，但 SPOP 将随机元素从集合中移除并返回，而 Srandmember 则仅仅返回随机元素，而不对集合进行任何改动。
 func SPop(ctx context.Context, key string) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "spop", key)
+	reply, err = _client.Do(ctx, "spop", key)
 	return
 }
 
@@ -1099,7 +1105,7 @@ func SPop(ctx context.Context, key string) (reply interface{}, err error) {
 // Redis Spop 命令用于移除集合中的指定 key 的一个或多个随机元素，移除后会返回移除的元素。
 // 该命令类似 Srandmember 命令，但 SPOP 将随机元素从集合中移除并返回，而 Srandmember 则仅仅返回随机元素，而不对集合进行任何改动。
 func SPopN(ctx context.Context, key string, count int64) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "spop", key, count)
+	reply, err = _client.Do(ctx, "spop", key, count)
 	return
 }
 
@@ -1110,7 +1116,7 @@ func SPopN(ctx context.Context, key string, count int64) (reply interface{}, err
 // 如果 count 为负数，那么命令返回一个数组，数组中的元素可能会重复出现多次，而数组的长度为 count 的绝对值。
 // 该操作和 SPOP 相似，但 SPOP 将随机元素从集合中移除并返回，而 Srandmember 则仅仅返回随机元素，而不对集合进行任何改动。
 func SRandMember(ctx context.Context, key string) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "srandmember", key)
+	reply, err = _client.Do(ctx, "srandmember", key)
 	return
 }
 
@@ -1121,7 +1127,7 @@ func SRandMember(ctx context.Context, key string) (reply interface{}, err error)
 // 如果 count 为负数，那么命令返回一个数组，数组中的元素可能会重复出现多次，而数组的长度为 count 的绝对值。
 // 该操作和 SPOP 相似，但 SPOP 将随机元素从集合中移除并返回，而 Srandmember 则仅仅返回随机元素，而不对集合进行任何改动。
 func SRandMemberN(ctx context.Context, key string, count int64) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "srandmember", key, count)
+	reply, err = _client.Do(ctx, "srandmember", key, count)
 	return
 }
 
@@ -1133,14 +1139,14 @@ func SRem(ctx context.Context, key string, members ...interface{}) (reply interf
 	args := make([]interface{}, 1, 1+len(members))
 	args[0] = key
 	args = appendArgs(args, members)
-	reply, err = tkredis.Redis().Do(ctx, "srem", args...)
+	reply, err = _client.Do(ctx, "srem", args...)
 	return
 }
 
 // SUnion .
 // Redis Sunion 命令返回给定集合的并集。不存在的集合 key 被视为空集。
 func SUnion(ctx context.Context, keys ...interface{}) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "sunion", keys...)
+	reply, err = _client.Do(ctx, "sunion", keys...)
 	return
 }
 
@@ -1152,7 +1158,7 @@ func SUnionStore(ctx context.Context, destination string, keys ...string) (reply
 	for i, key := range keys {
 		args[1+i] = key
 	}
-	reply, err = tkredis.Redis().Do(ctx, "sunionstore", args...)
+	reply, err = _client.Do(ctx, "sunionstore", args...)
 	return
 }
 
@@ -1188,7 +1194,7 @@ func XAdd(ctx context.Context, a *XAddArgs) (reply interface{}, err error) {
 		args = append(args, v)
 	}
 
-	reply, err = tkredis.Redis().Do(ctx, "xadd", args...)
+	reply, err = _client.Do(ctx, "xadd", args...)
 	return
 }
 
@@ -1199,42 +1205,42 @@ func XDel(ctx context.Context, stream string, ids ...string) (reply interface{},
 	for _, id := range ids {
 		args = append(args, id)
 	}
-	reply, err = tkredis.Redis().Do(ctx, "xdel", args...)
+	reply, err = _client.Do(ctx, "xdel", args...)
 	return
 }
 
 // XLen .
 // XLEN - 获取流包含的元素数量，即消息长度
 func XLen(ctx context.Context, stream string) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "xlen", stream)
+	reply, err = _client.Do(ctx, "xlen", stream)
 	return
 }
 
 // XRange .
 // XRANGE - 获取消息列表，会自动过滤已经删除的消息
 func XRange(ctx context.Context, stream, start, stop string) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "xrange", stream, start, stop)
+	reply, err = _client.Do(ctx, "xrange", stream, start, stop)
 	return
 }
 
 // XRangeN .
 // XRANGE - 获取消息列表，会自动过滤已经删除的消息
 func XRangeN(ctx context.Context, stream, start, stop string, count int64) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "xrange", stream, start, stop, "count", count)
+	reply, err = _client.Do(ctx, "xrange", stream, start, stop, "count", count)
 	return
 }
 
 // XRevRange .
 // XREVRANGE - 反向获取消息列表，ID 从大到小
 func XRevRange(ctx context.Context, stream, start, stop string) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "xrevrange", stream, start, stop)
+	reply, err = _client.Do(ctx, "xrevrange", stream, start, stop)
 	return
 }
 
 // XRevRangeN .
 // XREVRANGE - 反向获取消息列表，ID 从大到小
 func XRevRangeN(ctx context.Context, stream, start, stop string, count int64) (reply interface{}, err error) {
-	reply, err = tkredis.Redis().Do(ctx, "xrevrange", stream, start, stop, "count", count)
+	reply, err = _client.Do(ctx, "xrevrange", stream, start, stop, "count", count)
 	return
 }
 
@@ -1247,7 +1253,198 @@ type XReadArgs struct {
 
 // XRead .
 // XREAD - 以阻塞或非阻塞方式获取消息列表
-//func XRead(ctx context.Context, a *XReadArgs) (reply interface{}, err error) {
-//	reply, err = tkredis.Redis().Do(ctx, "xrevrange", stream, start, stop, "count", count)
-//	return
-//}
+func XRead(ctx context.Context, a *XReadArgs) (reply interface{}, err error) {
+	args := make([]interface{}, 0, 4+len(a.Streams))
+	if a.Count > 0 {
+		args = append(args, "count")
+		args = append(args, a.Count)
+	}
+	if a.Block >= 0 {
+		args = append(args, "block")
+		args = append(args, int64(a.Block/time.Millisecond))
+	}
+	args = append(args, "streams")
+	for _, s := range a.Streams {
+		args = append(args, s)
+	}
+	if a.Block >= 0 {
+		//ctx, cancel := context.WithTimeout(ctx, a.Block)
+		//defer cancel()
+	}
+	reply, err = _client.Do(ctx, "xread", args...)
+	return
+}
+
+// XReadStreams .
+// XREAD - 以阻塞或非阻塞方式获取消息列表
+func XReadStreams(ctx context.Context, streams ...string) (reply interface{}, err error) {
+	reply, err = XRead(ctx, &XReadArgs{
+		Streams: streams,
+		Block:   -1,
+	})
+	return
+}
+
+// XGroupCreate .
+// XGROUP CREATE - 创建消费者组
+func XGroupCreate(ctx context.Context, stream, group, start string) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "xgroup", "create", stream, group, start)
+	return
+}
+
+// XGroupCreateMkStream .
+// XGROUP CREATE - 创建消费者组
+func XGroupCreateMkStream(ctx context.Context, stream, group, start string) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "xgroup", "create", stream, group, start, "mkstream")
+	return
+}
+
+// XGroupSetID .
+// XGROUP SETID - 为消费者组设置新的最后递送消息ID
+func XGroupSetID(ctx context.Context, stream, group, start string) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "xgroup", "setid", stream, group, start)
+	return
+}
+
+// XGroupDestroy .
+// XGROUP DESTROY - 删除消费者组
+func XGroupDestroy(ctx context.Context, stream, group string) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "xgroup", "destroy", stream, group)
+	return
+}
+
+// XGroupDelConsumer .
+// XGROUP DELCONSUMER - 删除消费者
+func XGroupDelConsumer(ctx context.Context, stream, group, consumer string) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "xgroup", "delconsumer", stream, group, consumer)
+	return
+}
+
+// XReadGroupArgs .
+type XReadGroupArgs struct {
+	Group    string
+	Consumer string
+	// List of streams and ids.
+	Streams []string
+	Count   int64
+	Block   time.Duration
+	NoAck   bool
+}
+
+// XReadGroup .
+// XREADGROUP GROUP - 读取消费者组中的消息
+func XReadGroup(ctx context.Context, a *XReadGroupArgs) (reply interface{}, err error) {
+	args := make([]interface{}, 0, 7+len(a.Streams))
+	args = append(args, "group", a.Group, a.Consumer)
+	if a.Count > 0 {
+		args = append(args, "count", a.Count)
+	}
+	if a.Block >= 0 {
+		args = append(args, "block", int64(a.Block/time.Millisecond))
+	}
+	if a.NoAck {
+		args = append(args, "noack")
+	}
+	args = append(args, "streams")
+	for _, s := range a.Streams {
+		args = append(args, s)
+	}
+	if a.Block >= 0 {
+		//ctx, cancel := context.WithTimeout(ctx, a.Block)
+		//defer cancel()
+	}
+	reply, err = _client.Do(ctx, "xreadgroup", args...)
+	return
+}
+
+// XAck .
+// XACK - 将消息标记为"已处理"
+func XAck(ctx context.Context, stream, group string, ids ...string) (reply interface{}, err error) {
+	args := []interface{}{stream, group}
+	for _, id := range ids {
+		args = append(args, id)
+	}
+	reply, err = _client.Do(ctx, "xack", args...)
+	return
+}
+
+// XPending .
+// XPENDING - 显示待处理消息的相关信息
+func XPending(ctx context.Context, stream, group string) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "xpending", stream, group)
+	return
+}
+
+// XPendingExtArgs .
+type XPendingExtArgs struct {
+	Stream   string
+	Group    string
+	Start    string
+	End      string
+	Count    int64
+	Consumer string
+}
+
+// XPendingExt .
+// XPENDING - 显示待处理消息的相关信息
+func XPendingExt(ctx context.Context, a *XPendingExtArgs) (reply interface{}, err error) {
+	args := make([]interface{}, 0, 6)
+	args = append(args, a.Stream, a.Group, a.Start, a.End, a.Count)
+	if a.Consumer != "" {
+		args = append(args, a.Consumer)
+	}
+	reply, err = _client.Do(ctx, "xpending", args...)
+	return
+}
+
+// XClaimArgs .
+type XClaimArgs struct {
+	Stream   string
+	Group    string
+	Consumer string
+	MinIdle  time.Duration
+	Messages []string
+}
+
+// xClaimArgs .
+func xClaimArgs(a *XClaimArgs) []interface{} {
+	args := make([]interface{}, 0, 3+len(a.Messages))
+	args = append(args, a.Stream, a.Group, a.Consumer, int64(a.MinIdle/time.Millisecond))
+	for _, id := range a.Messages {
+		args = append(args, id)
+	}
+	return args
+}
+
+// XClaim .
+// XCLAIM - 转移消息的归属权
+func XClaim(ctx context.Context, a *XClaimArgs) (reply interface{}, err error) {
+	args := xClaimArgs(a)
+	reply, err = _client.Do(ctx, "xclaim", args...)
+	return
+}
+
+// XClaimJustID .
+// XCLAIM - 转移消息的归属权
+func XClaimJustID(ctx context.Context, a *XClaimArgs) (reply interface{}, err error) {
+	args := xClaimArgs(a)
+	args = append(args, "justid")
+	reply, err = _client.Do(ctx, "xclaim", args...)
+	return
+}
+
+// XTrim .
+// XTRIM - 对流进行修剪，限制长度
+func XTrim(ctx context.Context, key string, maxLen int64) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "xtrim", key, "maxlen", maxLen)
+	return
+}
+
+// XTrimApprox .
+// XTRIM - 对流进行修剪，限制长度
+func XTrimApprox(ctx context.Context, key string, maxLen int64) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "xtrim", key, "maxlen", "~", maxLen)
+	return
+}
+
+//------------------------------------------------------------------------------
