@@ -266,8 +266,8 @@ func RestoreReplace(ctx context.Context, key string, ttl time.Duration, value st
 	return
 }
 
-// SortParam .
-type SortParam struct {
+// SortArgs .
+type SortArgs struct {
 	By            string
 	Offset, Count int64
 	Get           []string
@@ -276,7 +276,7 @@ type SortParam struct {
 }
 
 // args .
-func (sort *SortParam) args(key string) []interface{} {
+func (sort *SortArgs) args(key string) []interface{} {
 	//args := []interface{}{"sort", key}
 	args := []interface{}{key}
 	if sort.By != "" {
@@ -300,7 +300,7 @@ func (sort *SortParam) args(key string) []interface{} {
 // Sort .
 // redis支持对list，set，sorted set、hash元素（元素可以为数值与字符串）的排序。
 // sort key [BY pattern] [LIMIT start count] [GET pattern] [ASC|DESC] [ALPHA] [STORE dstkey]
-func Sort(ctx context.Context, key string, sort *SortParam) (reply interface{}, err error) {
+func Sort(ctx context.Context, key string, sort *SortArgs) (reply interface{}, err error) {
 	reply, err = tkredis.Redis().Do(ctx, "sort", sort.args(key)...)
 	return
 }
@@ -309,7 +309,7 @@ func Sort(ctx context.Context, key string, sort *SortParam) (reply interface{}, 
 // redis支持对list，set，sorted set、hash元素（元素可以为数值与字符串）的排序。
 // sort key [BY pattern] [LIMIT start count] [GET pattern] [ASC|DESC] [ALPHA] [STORE dstkey]
 // 如果对集合经常按照固定的模式去排序，那么把排序结果缓存起来会减少不少cpu开销，使用store选项可以将排序内容保存到指定key中，保存的类型是list
-func SortStore(ctx context.Context, key, store string, sort *SortParam) (reply interface{}, err error) {
+func SortStore(ctx context.Context, key, store string, sort *SortArgs) (reply interface{}, err error) {
 	args := sort.args(key)
 	if store != "" {
 		args = append(args, "store", store)
@@ -321,7 +321,7 @@ func SortStore(ctx context.Context, key, store string, sort *SortParam) (reply i
 // SortInterfaces .
 // redis支持对list，set，sorted set、hash元素（元素可以为数值与字符串）的排序。
 // sort key [BY pattern] [LIMIT start count] [GET pattern] [ASC|DESC] [ALPHA] [STORE dstkey]
-func SortInterfaces(ctx context.Context, key string, sort *SortParam) (reply interface{}, err error) {
+func SortInterfaces(ctx context.Context, key string, sort *SortArgs) (reply interface{}, err error) {
 	reply, err = tkredis.Redis().Do(ctx, "sort", sort.args(key)...)
 	return
 }
@@ -415,8 +415,8 @@ func Append(ctx context.Context, key, value string) (reply interface{}, err erro
 	return
 }
 
-// BitCountParam .
-type BitCountParam struct {
+// BitCountArgs .
+type BitCountArgs struct {
 	Start, End int64
 }
 
@@ -424,7 +424,7 @@ type BitCountParam struct {
 // 统计指定位区间上值为1的个数
 // BITCOUNT key [start end]
 // 从左向右从0开始，从右向左从-1开始，注意start和end是字节
-func BitCount(ctx context.Context, key string, bitCount *BitCountParam) (reply interface{}, err error) {
+func BitCount(ctx context.Context, key string, bitCount *BitCountArgs) (reply interface{}, err error) {
 	args := []interface{}{key}
 	if bitCount != nil {
 		args = append(
@@ -1157,3 +1157,97 @@ func SUnionStore(ctx context.Context, destination string, keys ...string) (reply
 }
 
 //------------------------------------------------------------------------------
+
+// XAddArgs .
+type XAddArgs struct {
+	Stream       string
+	MaxLen       int64 // MAXLEN N
+	MaxLenApprox int64 // MAXLEN ~ N
+	ID           string
+	Values       map[string]interface{}
+}
+
+// XAdd .
+// https://www.runoob.com/redis/redis-stream.html
+// XADD - 添加消息到末尾
+func XAdd(ctx context.Context, a *XAddArgs) (reply interface{}, err error) {
+	args := make([]interface{}, 0, 5+len(a.Values)*2)
+	args = append(args, a.Stream)
+	if a.MaxLen > 0 {
+		args = append(args, "maxlen", a.MaxLen)
+	} else if a.MaxLenApprox > 0 {
+		args = append(args, "maxlen", "~", a.MaxLenApprox)
+	}
+	if a.ID != "" {
+		args = append(args, a.ID)
+	} else {
+		args = append(args, "*")
+	}
+	for k, v := range a.Values {
+		args = append(args, k)
+		args = append(args, v)
+	}
+
+	reply, err = tkredis.Redis().Do(ctx, "xadd", args...)
+	return
+}
+
+// XDel .
+// XDel - 删除消息
+func XDel(ctx context.Context, stream string, ids ...string) (reply interface{}, err error) {
+	args := []interface{}{stream}
+	for _, id := range ids {
+		args = append(args, id)
+	}
+	reply, err = tkredis.Redis().Do(ctx, "xdel", args...)
+	return
+}
+
+// XLen .
+// XLEN - 获取流包含的元素数量，即消息长度
+func XLen(ctx context.Context, stream string) (reply interface{}, err error) {
+	reply, err = tkredis.Redis().Do(ctx, "xlen", stream)
+	return
+}
+
+// XRange .
+// XRANGE - 获取消息列表，会自动过滤已经删除的消息
+func XRange(ctx context.Context, stream, start, stop string) (reply interface{}, err error) {
+	reply, err = tkredis.Redis().Do(ctx, "xrange", stream, start, stop)
+	return
+}
+
+// XRangeN .
+// XRANGE - 获取消息列表，会自动过滤已经删除的消息
+func XRangeN(ctx context.Context, stream, start, stop string, count int64) (reply interface{}, err error) {
+	reply, err = tkredis.Redis().Do(ctx, "xrange", stream, start, stop, "count", count)
+	return
+}
+
+// XRevRange .
+// XREVRANGE - 反向获取消息列表，ID 从大到小
+func XRevRange(ctx context.Context, stream, start, stop string) (reply interface{}, err error) {
+	reply, err = tkredis.Redis().Do(ctx, "xrevrange", stream, start, stop)
+	return
+}
+
+// XRevRangeN .
+// XREVRANGE - 反向获取消息列表，ID 从大到小
+func XRevRangeN(ctx context.Context, stream, start, stop string, count int64) (reply interface{}, err error) {
+	reply, err = tkredis.Redis().Do(ctx, "xrevrange", stream, start, stop, "count", count)
+	return
+}
+
+// XReadArgs .
+type XReadArgs struct {
+	Streams []string
+	Count   int64
+	Block   time.Duration
+}
+
+// XRead .
+// XREAD - 以阻塞或非阻塞方式获取消息列表
+//func XRead(ctx context.Context, a *XReadArgs) (reply interface{}, err error) {
+//	reply, err = tkredis.Redis().Do(ctx, "xrevrange", stream, start, stop, "count", count)
+//	return
+//}
