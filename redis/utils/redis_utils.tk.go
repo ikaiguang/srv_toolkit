@@ -414,3 +414,407 @@ func Append(ctx context.Context, key, value string) (reply interface{}, err erro
 	reply, err = tkredis.Redis().Do(ctx, "append", key, value)
 	return
 }
+
+// BitCountParam .
+type BitCountParam struct {
+	Start, End int64
+}
+
+// BitCount .
+// 统计指定位区间上值为1的个数
+// BITCOUNT key [start end]
+// 从左向右从0开始，从右向左从-1开始，注意start和end是字节
+func BitCount(ctx context.Context, key string, bitCount *BitCountParam) (reply interface{}, err error) {
+	args := []interface{}{key}
+	if bitCount != nil {
+		args = append(
+			args,
+			bitCount.Start,
+			bitCount.End,
+		)
+	}
+	reply, err = tkredis.Redis().Do(ctx, "bitcount", args...)
+	return
+}
+
+// bitOp
+func bitOp(op, destKey string, keys ...string) []interface{} {
+	args := make([]interface{}, 2+len(keys))
+	args[0] = op
+	args[1] = destKey
+	for i, key := range keys {
+		args[2+i] = key
+	}
+	return args
+}
+
+// BitOpAnd .
+// BITOP AND destkey key [key ...]  ，对一个或多个key求逻辑并，并将结果保存到destkey
+func BitOpAnd(ctx context.Context, destKey string, keys ...string) (reply interface{}, err error) {
+	args := bitOp("and", destKey, keys...)
+	reply, err = tkredis.Redis().Do(ctx, "bitop", args...)
+	return
+}
+
+// BitOpOr .
+// BITOP OR destkey key [key ...] ，对一个或多个key求逻辑或，并将结果保存到destkey
+func BitOpOr(ctx context.Context, destKey string, keys ...string) (reply interface{}, err error) {
+	args := bitOp("or", destKey, keys...)
+	reply, err = tkredis.Redis().Do(ctx, "bitop", args...)
+	return
+}
+
+// BitOpXor .
+// BITOP XOR destkey key [key ...] ，对一个或多个key求逻辑异或，并将结果保存到destkey
+func BitOpXor(ctx context.Context, destKey string, keys ...string) (reply interface{}, err error) {
+	args := bitOp("xor", destKey, keys...)
+	reply, err = tkredis.Redis().Do(ctx, "bitop", args...)
+	return
+}
+
+// BitOpNot .
+// BITOP NOT destkey key ，对给定key求逻辑非，并将结果保存到destkey
+func BitOpNot(ctx context.Context, destKey string, keys ...string) (reply interface{}, err error) {
+	args := bitOp("not", destKey, keys...)
+	reply, err = tkredis.Redis().Do(ctx, "bitop", args...)
+	return
+}
+
+// BitPos .
+// 返回字符串里面第一个被设置为1或者0的bit位。
+func BitPos(ctx context.Context, key string, bit int64, pos ...int64) (reply interface{}, err error) {
+	args := make([]interface{}, 2+len(pos))
+	args[0] = key
+	args[1] = bit
+	switch len(pos) {
+	case 0:
+	case 1:
+		args[2] = pos[0]
+	case 2:
+		args[2] = pos[0]
+		args[3] = pos[1]
+	default:
+		panic("too many arguments")
+	}
+	reply, err = tkredis.Redis().Do(ctx, "bitpos", args...)
+	return
+}
+
+// Decr .
+// Redis Decr 命令将 key 中储存的数字值减一。
+// 如果 key 不存在，那么 key 的值会先被初始化为 0 ，然后再执行 DECR 操作。
+// 如果值包含错误的类型，或字符串类型的值不能表示为数字，那么返回一个错误。
+// 本操作的值限制在 64 位(bit)有符号数字表示之内。
+func Decr(ctx context.Context, key string) (reply interface{}, err error) {
+	reply, err = tkredis.Redis().Do(ctx, "decr", key)
+	return
+}
+
+// DecrBy .
+// Redis Decrby 命令将 key 所储存的值减去指定的减量值。
+// 如果 key 不存在，那么 key 的值会先被初始化为 0 ，然后再执行 DECR 操作。
+// 如果值包含错误的类型，或字符串类型的值不能表示为数字，那么返回一个错误。
+// 本操作的值限制在 64 位(bit)有符号数字表示之内。
+func DecrBy(ctx context.Context, key string, decrement int64) (reply interface{}, err error) {
+	reply, err = tkredis.Redis().Do(ctx, "decrby", key, decrement)
+	return
+}
+
+// Get .
+// Redis Get 命令用于获取指定 key 的值。如果 key 不存在，返回 nil 。如果key 储存的值不是字符串类型，返回一个错误。
+func Get(ctx context.Context, key string) (reply interface{}, err error) {
+	reply, err = tkredis.Redis().Do(ctx, "get", key)
+	return
+}
+
+// GetBit .
+// Redis Getbit 命令用于对 key 所储存的字符串值，获取指定偏移量上的位(bit)。
+func GetBit(ctx context.Context, key string, offset int64) (reply interface{}, err error) {
+	reply, err = tkredis.Redis().Do(ctx, "getbit", key, offset)
+	return
+}
+
+// GetRange .
+// Redis Getrange 命令用于获取存储在指定 key 中字符串的子字符串。字符串的截取范围由 start 和 end 两个偏移量决定(包括 start 和 end 在内)。
+func GetRange(ctx context.Context, key string, start, end int64) (reply interface{}, err error) {
+	reply, err = tkredis.Redis().Do(ctx, "getrange", key, start, end)
+	return
+}
+
+// GetSet .
+// Redis Getset 命令用于设置指定 key 的值，并返回 key 的旧值。
+func GetSet(ctx context.Context, key string, value interface{}) (reply interface{}, err error) {
+	reply, err = tkredis.Redis().Do(ctx, "getset", key, value)
+	return
+}
+
+// Incr .
+// Redis Incr 命令将 key 中储存的数字值增一。
+// 如果 key 不存在，那么 key 的值会先被初始化为 0 ，然后再执行 INCR 操作。
+// 如果值包含错误的类型，或字符串类型的值不能表示为数字，那么返回一个错误。
+// 本操作的值限制在 64 位(bit)有符号数字表示之内。
+func Incr(ctx context.Context, key string) (reply interface{}, err error) {
+	reply, err = tkredis.Redis().Do(ctx, "incr", key)
+	return
+}
+
+// IncrBy .
+// Redis Incrby 命令将 key 中储存的数字加上指定的增量值。
+// 如果 key 不存在，那么 key 的值会先被初始化为 0 ，然后再执行 INCR 操作。
+// 如果值包含错误的类型，或字符串类型的值不能表示为数字，那么返回一个错误。
+// 本操作的值限制在 64 位(bit)有符号数字表示之内。
+func IncrBy(ctx context.Context, key string, value int64) (reply interface{}, err error) {
+	reply, err = tkredis.Redis().Do(ctx, "incrby", key, value)
+	return
+}
+
+// IncrByFloat .
+// Redis Incrbyfloat 命令为 key 中所储存的值加上指定的浮点数增量值。
+// 如果 key 不存在，那么 INCRBYFLOAT 会先将 key 的值设为 0 ，再执行加法操作。
+func IncrByFloat(ctx context.Context, key string, value float64) (reply interface{}, err error) {
+	reply, err = tkredis.Redis().Do(ctx, "incrbyfloat", key, value)
+	return
+}
+
+// appendArgs .
+func appendArgs(dst, src []interface{}) []interface{} {
+	if len(src) == 1 {
+		if ss, ok := src[0].([]string); ok {
+			for _, s := range ss {
+				dst = append(dst, s)
+			}
+			return dst
+		}
+	}
+
+	for _, v := range src {
+		dst = append(dst, v)
+	}
+	return dst
+}
+
+// MGet .
+// Redis Mget 命令返回所有(一个或多个)给定 key 的值。 如果给定的 key 里面，有某个 key 不存在，那么这个 key 返回特殊值 nil 。
+func MGet(ctx context.Context, keys ...interface{}) (reply interface{}, err error) {
+	reply, err = tkredis.Redis().Do(ctx, "mget", keys...)
+	return
+}
+
+// MSet .
+// Redis Mset 命令用于同时设置一个或多个 key-value 对。
+func MSet(ctx context.Context, pairs ...interface{}) (reply interface{}, err error) {
+	args := make([]interface{}, len(pairs))
+	args = appendArgs(args, pairs)
+	reply, err = tkredis.Redis().Do(ctx, "mset", args...)
+	return
+}
+
+// MSetNX .
+// Redis Msetnx 命令用于所有给定 key 都不存在时，同时设置一个或多个 key-value 对。
+// 当所有 key 都成功设置，返回 1 。 如果所有给定 key 都设置失败(至少有一个 key 已经存在)，那么返回 0 。
+func MSetNX(ctx context.Context, pairs ...interface{}) (reply interface{}, err error) {
+	args := make([]interface{}, len(pairs))
+	args = appendArgs(args, pairs)
+	reply, err = tkredis.Redis().Do(ctx, "msetnx", args...)
+	return
+}
+
+// Set .
+// Redis SET 命令用于设置给定 key 的值。如果 key 已经存储其他值， SET 就覆写旧值，且无视类型。
+func Set(ctx context.Context, key string, value interface{}, expiration time.Duration) (reply interface{}, err error) {
+	args := make([]interface{}, 2, 3)
+	args[0] = key
+	args[1] = value
+	if expiration > 0 {
+		if usePrecise(expiration) {
+			args = append(args, "px", formatMs(expiration))
+		} else {
+			args = append(args, "ex", formatSec(expiration))
+		}
+	}
+	reply, err = tkredis.Redis().Do(ctx, "set", args...)
+	return
+}
+
+// SetBit .
+// Redis Setbit 命令用于对 key 所储存的字符串值，设置或清除指定偏移量上的位(bit)。
+func SetBit(ctx context.Context, key string, offset int64, value int) (reply interface{}, err error) {
+	reply, err = tkredis.Redis().Do(ctx, "setbit", key, offset, value)
+	return
+}
+
+// SetNX .
+// Redis Setnx（SET if Not eXists） 命令在指定的 key 不存在时，为 key 设置指定的值。
+func SetNX(ctx context.Context, key string, value interface{}, expiration time.Duration) (reply interface{}, err error) {
+	if expiration == 0 {
+		// Use old `SETNX` to support old Redis versions.
+		reply, err = tkredis.Redis().Do(ctx, "setnx", key, value)
+	} else {
+		if usePrecise(expiration) {
+			reply, err = tkredis.Redis().Do(ctx, "set", key, value, "px", formatMs(expiration), "nx")
+		} else {
+			reply, err = tkredis.Redis().Do(ctx, "set", key, value, "ex", formatMs(expiration), "nx")
+		}
+	}
+	return
+}
+
+// SetXX .
+// Redis `SET key value [expiration] XX` command.
+// Zero expiration means the key has no expiration time.
+// NX ： 只在键不存在时， 才对键进行设置操作。 执行 SET key value NX 的效果等同于执行 SETNX key value 。
+// XX ： 只在键已经存在时， 才对键进行设置操作。
+func SetXX(ctx context.Context, key string, value interface{}, expiration time.Duration) (reply interface{}, err error) {
+	if expiration == 0 {
+		reply, err = tkredis.Redis().Do(ctx, "set", key, value, "xx")
+	} else {
+		if usePrecise(expiration) {
+			reply, err = tkredis.Redis().Do(ctx, "set", key, value, "px", formatMs(expiration), "xx")
+		} else {
+			reply, err = tkredis.Redis().Do(ctx, "set", key, value, "ex", formatSec(expiration), "xx")
+		}
+	}
+	return
+}
+
+// SetRange .
+// Redis Setrange 命令用指定的字符串覆盖给定 key 所储存的字符串值，覆盖的位置从偏移量 offset 开始。
+func SetRange(ctx context.Context, key string, offset int64, value string) (reply interface{}, err error) {
+	reply, err = tkredis.Redis().Do(ctx, "setrange", key, offset, value)
+	return
+}
+
+// StrLen .
+// Redis Strlen 命令用于获取指定 key 所储存的字符串值的长度。当 key 储存的不是字符串值时，返回一个错误。
+func StrLen(ctx context.Context, key string) (reply interface{}, err error) {
+	reply, err = tkredis.Redis().Do(ctx, "strlen", key)
+	return
+}
+
+//------------------------------------------------------------------------------
+
+// HDel .
+// Redis Hdel 命令用于删除哈希表 key 中的一个或多个指定字段，不存在的字段将被忽略。
+func HDel(ctx context.Context, key string, fields ...string) (reply interface{}, err error) {
+	args := make([]interface{}, 1+len(fields))
+	args[0] = key
+	for i, field := range fields {
+		args[1+i] = field
+	}
+	reply, err = tkredis.Redis().Do(ctx, "hdel", args...)
+	return
+}
+
+// HExists .
+// Redis Hexists 命令用于查看哈希表的指定字段是否存在。
+func HExists(ctx context.Context, key string, field string) (reply interface{}, err error) {
+	reply, err = tkredis.Redis().Do(ctx, "hexists", key, field)
+	return
+}
+
+// HGet .
+// Redis Hget 命令用于返回哈希表中指定字段的值。
+func HGet(ctx context.Context, key string, field string) (reply interface{}, err error) {
+	reply, err = tkredis.Redis().Do(ctx, "hget", key, field)
+	return
+}
+
+// HGetAll .
+// Redis Hgetall 命令用于返回哈希表中，所有的字段和值。
+// 在返回值里，紧跟每个字段名(field name)之后是字段的值(value)，所以返回值的长度是哈希表大小的两倍
+func HGetAll(ctx context.Context, key string) (reply interface{}, err error) {
+	reply, err = tkredis.Redis().Do(ctx, "hgetall", key)
+	return
+}
+
+// HIncrBy .
+// Redis Hincrby 命令用于为哈希表中的字段值加上指定增量值。
+// 增量也可以为负数，相当于对指定字段进行减法操作。
+// 如果哈希表的 key 不存在，一个新的哈希表被创建并执行 HINCRBY 命令。
+// 如果指定的字段不存在，那么在执行命令前，字段的值被初始化为 0 。
+// 对一个储存字符串值的字段执行 HINCRBY 命令将造成一个错误。
+// 本操作的值被限制在 64 位(bit)有符号数字表示之内。
+func HIncrBy(ctx context.Context, key, field string, incr int64) (reply interface{}, err error) {
+	reply, err = tkredis.Redis().Do(ctx, "hincrby", key, field, incr)
+	return
+}
+
+// HIncrByFloat .
+// Redis Hincrbyfloat 命令用于为哈希表中的字段值加上指定浮点数增量值。
+// 如果指定的字段不存在，那么在执行命令前，字段的值被初始化为 0
+func HIncrByFloat(ctx context.Context, key, field string, incr float64) (reply interface{}, err error) {
+	reply, err = tkredis.Redis().Do(ctx, "hincrbyfloat", key, field, incr)
+	return
+}
+
+// HKeys .
+// Redis Hkeys 命令用于获取哈希表中的所有域（field）。
+func HKeys(ctx context.Context, key string) (reply interface{}, err error) {
+	reply, err = tkredis.Redis().Do(ctx, "hkeys", key)
+	return
+}
+
+// HLen .
+// Redis Hlen 命令用于获取哈希表中字段的数量。
+func HLen(ctx context.Context, key string) (reply interface{}, err error) {
+	reply, err = tkredis.Redis().Do(ctx, "hlen", key)
+	return
+}
+
+// HMGet .
+// Redis Hmget 命令用于返回哈希表中，一个或多个给定字段的值。
+// 如果指定的字段不存在于哈希表，那么返回一个 nil 值。
+func HMGet(ctx context.Context, key string, fields ...string) (reply interface{}, err error) {
+	args := make([]interface{}, 1+len(fields))
+	args[0] = key
+	for i, field := range fields {
+		args[1+i] = field
+	}
+	reply, err = tkredis.Redis().Do(ctx, "hmget", args...)
+	return
+}
+
+// HMSet .
+// Redis Hmset 命令用于同时将多个 field-value (字段-值)对设置到哈希表中。
+// 此命令会覆盖哈希表中已存在的字段。
+// 如果哈希表不存在，会创建一个空哈希表，并执行 HMSET 操作。
+func HMSet(ctx context.Context, key string, fields map[string]interface{}) (reply interface{}, err error) {
+	args := make([]interface{}, 1+len(fields)*2)
+	args[0] = key
+	i := 1
+	for k, v := range fields {
+		args[i] = k
+		args[i+1] = v
+		i += 2
+	}
+	reply, err = tkredis.Redis().Do(ctx, "hmset", args...)
+	return
+}
+
+// HSet .
+// Redis Hset 命令用于为哈希表中的字段赋值 。
+// 如果哈希表不存在，一个新的哈希表被创建并进行 HSET 操作。
+// 如果字段已经存在于哈希表中，旧值将被覆盖。
+func HSet(ctx context.Context, key, field string, value interface{}) (reply interface{}, err error) {
+	reply, err = tkredis.Redis().Do(ctx, "hset", key, field, value)
+	return
+}
+
+// HSetNX .
+// Redis Hsetnx 命令用于为哈希表中不存在的的字段赋值 。
+// 如果哈希表不存在，一个新的哈希表被创建并进行 HSET 操作。
+// 如果字段已经存在于哈希表中，操作无效。
+// 如果 key 不存在，一个新哈希表被创建并执行 HSETNX 命令。
+func HSetNX(ctx context.Context, key, field string, value interface{}) (reply interface{}, err error) {
+	reply, err = tkredis.Redis().Do(ctx, "hsetnx", key, field, value)
+	return
+}
+
+// HVals .
+// Redis Hvals 命令返回哈希表所有域(field)的值。
+func HVals(ctx context.Context, key string) (reply interface{}, err error) {
+	reply, err = tkredis.Redis().Do(ctx, "hvals", key)
+	return
+}
+
+//------------------------------------------------------------------------------
