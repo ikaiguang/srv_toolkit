@@ -818,3 +818,186 @@ func HVals(ctx context.Context, key string) (reply interface{}, err error) {
 }
 
 //------------------------------------------------------------------------------
+
+// BLPop .
+// Redis Blpop 命令移出并获取列表的第一个元素， 如果列表没有元素会阻塞列表直到等待超时或发现可弹出元素为止。
+func BLPop(ctx context.Context, timeout time.Duration, keys ...string) (reply interface{}, err error) {
+	args := make([]interface{}, len(keys)+1)
+	for i, key := range keys {
+		args[i] = key
+	}
+	args[len(args)-1] = formatSec(timeout)
+	//ctx, cancel := context.WithTimeout(ctx, timeout)
+	//defer cancel()
+	reply, err = tkredis.Redis().Do(ctx, "blpop", args...)
+	return
+}
+
+// BRPop .
+// Redis Brpop 命令移出并获取列表的最后一个元素， 如果列表没有元素会阻塞列表直到等待超时或发现可弹出元素为止。
+func BRPop(ctx context.Context, timeout time.Duration, keys ...string) (reply interface{}, err error) {
+	args := make([]interface{}, len(keys)+1)
+	for i, key := range keys {
+		args[i] = key
+	}
+	args[len(args)-1] = formatSec(timeout)
+	//ctx, cancel := context.WithTimeout(ctx, timeout)
+	//defer cancel()
+	reply, err = tkredis.Redis().Do(ctx, "brpop", args...)
+	return
+}
+
+// BRPopLPush .
+// Redis Brpoplpush 命令从列表中取出最后一个元素，并插入到另外一个列表的头部； 如果列表没有元素会阻塞列表直到等待超时或发现可弹出元素为止。
+// 假如在指定时间内没有任何元素被弹出，则返回一个 nil 和等待时长。 反之，返回一个含有两个元素的列表，第一个元素是被弹出元素的值，第二个元素是等待时长。
+func BRPopLPush(ctx context.Context, source, destination string, timeout time.Duration) (reply interface{}, err error) {
+	reply, err = tkredis.Redis().Do(ctx, "brpoplpush",
+		source,
+		destination,
+		formatSec(timeout),
+	)
+	return
+}
+
+// LIndex .
+// Redis Lindex 命令用于通过索引获取列表中的元素。你也可以使用负数下标，以 -1 表示列表的最后一个元素， -2 表示列表的倒数第二个元素，以此类推。
+func LIndex(ctx context.Context, key string, index int64) (reply interface{}, err error) {
+	reply, err = tkredis.Redis().Do(ctx, "lindex", key, index)
+	return
+}
+
+// LInsert .
+// Redis Linsert 命令用于在列表的元素前或者后插入元素。当指定元素不存在于列表中时，不执行任何操作。
+// 当列表不存在时，被视为空列表，不执行任何操作。
+// 如果 key 不是列表类型，返回一个错误。
+// LINSERT key BEFORE|AFTER pivot value
+func LInsert(ctx context.Context, key, op string, pivot, value interface{}) (reply interface{}, err error) {
+	reply, err = tkredis.Redis().Do(ctx, "linsert", key, op, pivot, value)
+	return
+}
+
+// LInsertBefore .
+// Redis Linsert 命令用于在列表的元素前或者后插入元素。当指定元素不存在于列表中时，不执行任何操作。
+// 当列表不存在时，被视为空列表，不执行任何操作。
+// 如果 key 不是列表类型，返回一个错误。
+// LINSERT key BEFORE|AFTER pivot value
+func LInsertBefore(ctx context.Context, key, op string, pivot, value interface{}) (reply interface{}, err error) {
+	reply, err = tkredis.Redis().Do(ctx, "linsert", key, "before", pivot, value)
+	return
+}
+
+// LInsertAfter .
+// Redis Linsert 命令用于在列表的元素前或者后插入元素。当指定元素不存在于列表中时，不执行任何操作。
+// 当列表不存在时，被视为空列表，不执行任何操作。
+// 如果 key 不是列表类型，返回一个错误。
+// LINSERT key BEFORE|AFTER pivot value
+func LInsertAfter(ctx context.Context, key, op string, pivot, value interface{}) (reply interface{}, err error) {
+	reply, err = tkredis.Redis().Do(ctx, "linsert", key, "after", pivot, value)
+	return
+}
+
+// LLen .
+// Redis Llen 命令用于返回列表的长度。 如果列表 key 不存在，则 key 被解释为一个空列表，返回 0 。 如果 key 不是列表类型，返回一个错误。
+func LLen(ctx context.Context, key string) (reply interface{}, err error) {
+	reply, err = tkredis.Redis().Do(ctx, "llen", key)
+	return
+}
+
+// LPop .
+// Redis Lpop 命令用于移除并返回列表的第一个元素。
+// 列表的第一个元素。 当列表 key 不存在时，返回 nil 。
+func LPop(ctx context.Context, key string) (reply interface{}, err error) {
+	reply, err = tkredis.Redis().Do(ctx, "lpop", key)
+	return
+}
+
+// LPush .
+// Redis Lpush 命令将一个或多个值插入到列表头部。 如果 key 不存在，一个空列表会被创建并执行 LPUSH 操作。 当 key 存在但不是列表类型时，返回一个错误。
+// 注意：在Redis 2.4版本以前的 LPUSH 命令，都只接受单个 value 值。
+func LPush(ctx context.Context, key string, values ...interface{}) (reply interface{}, err error) {
+	args := make([]interface{}, 1, 1+len(values))
+	args[0] = key
+	args = appendArgs(args, values)
+	reply, err = tkredis.Redis().Do(ctx, "lpush", args...)
+	return
+}
+
+// LPushX .
+// Redis Lpushx 将一个值插入到已存在的列表头部，列表不存在时操作无效。
+func LPushX(ctx context.Context, key string, value interface{}) (reply interface{}, err error) {
+	reply, err = tkredis.Redis().Do(ctx, "lpushx", key, value)
+	return
+}
+
+// LRange .
+// Redis Lrange 返回列表中指定区间内的元素，区间以偏移量 START 和 END 指定。
+// 其中 0 表示列表的第一个元素， 1 表示列表的第二个元素，以此类推。
+// 你也可以使用负数下标，以 -1 表示列表的最后一个元素， -2 表示列表的倒数第二个元素，以此类推。
+func LRange(ctx context.Context, key string, start, stop int64) (reply interface{}, err error) {
+	reply, err = tkredis.Redis().Do(ctx, "lrange", key, start, stop)
+	return
+}
+
+// LRem .
+// Redis Lrem 根据参数 COUNT 的值，移除列表中与参数 VALUE 相等的元素。
+// COUNT 的值可以是以下几种：
+// count > 0 : 从表头开始向表尾搜索，移除与 VALUE 相等的元素，数量为 COUNT 。
+// count < 0 : 从表尾开始向表头搜索，移除与 VALUE 相等的元素，数量为 COUNT 的绝对值。
+// count = 0 : 移除表中所有与 VALUE 相等的值。
+func LRem(ctx context.Context, key string, count int64, value interface{}) (reply interface{}, err error) {
+	reply, err = tkredis.Redis().Do(ctx, "lrem", key, count, value)
+	return
+}
+
+// LSet .
+// Redis Lset 通过索引来设置元素的值。
+// 当索引参数超出范围，或对一个空列表进行 LSET 时，返回一个错误。
+// 关于列表下标的更多信息，请参考 LINDEX 命令。
+func LSet(ctx context.Context, key string, index int64, value interface{}) (reply interface{}, err error) {
+	reply, err = tkredis.Redis().Do(ctx, "lset", key, index, value)
+	return
+}
+
+// LTrim .
+// Redis Ltrim 对一个列表进行修剪(trim)，就是说，让列表只保留指定区间内的元素，不在指定区间之内的元素都将被删除。
+// 下标 0 表示列表的第一个元素，以 1 表示列表的第二个元素，以此类推。
+// 你也可以使用负数下标，以 -1 表示列表的最后一个元素， -2 表示列表的倒数第二个元素，以此类推。
+func LTrim(ctx context.Context, key string, start, stop int64) (reply interface{}, err error) {
+	reply, err = tkredis.Redis().Do(ctx, "ltrim", key, start, stop)
+	return
+}
+
+// RPop .
+// Redis Rpop 命令用于移除列表的最后一个元素，返回值为移除的元素。
+func RPop(ctx context.Context, key string) (reply interface{}, err error) {
+	reply, err = tkredis.Redis().Do(ctx, "rpop", key)
+	return
+}
+
+// RPopLPush .
+// Redis Rpoplpush 命令用于移除列表的最后一个元素，并将该元素添加到另一个列表并返回。
+func RPopLPush(ctx context.Context, source, destination string) (reply interface{}, err error) {
+	reply, err = tkredis.Redis().Do(ctx, "rpoplpush", source, destination)
+	return
+}
+
+// RPush .
+// Redis Rpush 命令用于将一个或多个值插入到列表的尾部(最右边)。
+// 如果列表不存在，一个空列表会被创建并执行 RPUSH 操作。 当列表存在但不是列表类型时，返回一个错误。
+// 注意：在 Redis 2.4 版本以前的 RPUSH 命令，都只接受单个 value 值。
+func RPush(ctx context.Context, key string, values ...interface{}) (reply interface{}, err error) {
+	args := make([]interface{}, 1, 1+len(values))
+	args[0] = key
+	args = appendArgs(args, values)
+	reply, err = tkredis.Redis().Do(ctx, "rpush", args...)
+	return
+}
+
+// RPushX .
+// Redis rpushx，命令用于将一个或多个值插入到已存在的列表尾部(最右边)，如果列表不存在，操作无效。
+func RPushX(ctx context.Context, key string, value interface{}) (reply interface{}, err error) {
+	reply, err = tkredis.Redis().Do(ctx, "rpushx", key, value)
+	return
+}
+
+//------------------------------------------------------------------------------
