@@ -1448,3 +1448,603 @@ func XTrimApprox(ctx context.Context, key string, maxLen int64) (reply interface
 }
 
 //------------------------------------------------------------------------------
+
+// BZPopMax .
+// BZPOPMAX 是有序集合命令 ZPOPMAX带有阻塞功能的版本。
+// 参数 timeout 可以理解为客户端被阻塞的最大秒数值，0 表示永久阻塞。
+// 当有序集合空且执行超时时返回 nil
+// 返回三元素结果，第一元素 key 名称，第二元素成员名称，第三元素分数。
+func BZPopMax(ctx context.Context, timeout time.Duration, keys ...string) (reply interface{}, err error) {
+	args := make([]interface{}, len(keys)+1)
+	for i, key := range keys {
+		args[1+i] = key
+	}
+	args[len(args)-1] = formatSec(timeout)
+	reply, err = _client.Do(ctx, "bzpopmax", args...)
+	return
+}
+
+// BZPopMin .
+// BZPOPMIN 是有序集合命令 ZPOPMIN带有阻塞功能的版本。
+// 参数 timeout 可以理解为客户端被阻塞的最大秒数值，0 表示永久阻塞。
+// 当有序集合空且执行超时时返回 nil
+// 返回三元素结果，第一元素 key 名称，第二元素成员名称，第三元素分数。
+func BZPopMin(ctx context.Context, timeout time.Duration, keys ...string) (reply interface{}, err error) {
+	args := make([]interface{}, len(keys)+1)
+	for i, key := range keys {
+		args[1+i] = key
+	}
+	args[len(args)-1] = formatSec(timeout)
+	reply, err = _client.Do(ctx, "bzpopmin", args...)
+	return
+}
+
+// Z represents sorted set member.
+type Z struct {
+	Score  float64
+	Member interface{}
+}
+
+// ZWithKey represents sorted set member including the name of the key where it was popped.
+type ZWithKey struct {
+	Z
+	Key string
+}
+
+// ZStore is used as an arg to ZInterStore and ZUnionStore.
+type ZStore struct {
+	Weights []float64
+	// Can be SUM, MIN or MAX.
+	Aggregate string
+}
+
+// zAdd .
+func zAdd(a []interface{}, n int, members ...Z) []interface{} {
+	for i, m := range members {
+		a[n+2*i] = m.Score
+		a[n+2*i+1] = m.Member
+	}
+	return a
+}
+
+// ZAdd .
+// Redis Zadd 命令用于将一个或多个成员元素及其分数值加入到有序集当中。
+// 如果某个成员已经是有序集的成员，那么更新这个成员的分数值，并通过重新插入这个成员元素，来保证该成员在正确的位置上。
+// 分数值可以是整数值或双精度浮点数。
+// 如果有序集合 key 不存在，则创建一个空的有序集并执行 ZADD 操作。
+// 当 key 存在但不是有序集类型时，返回一个错误。
+// 注意： 在 Redis 2.4 版本以前， ZADD 每次只能添加一个元素。
+// XX: 仅仅更新存在的成员，不添加新成员。
+// NX: 不更新存在的成员。只添加新成员。
+func ZAdd(ctx context.Context, key string, members ...Z) (reply interface{}, err error) {
+	const n = 1
+	a := make([]interface{}, n+2*len(members))
+	a[0] = key
+	args := zAdd(a, n, members...)
+	reply, err = _client.Do(ctx, "zadd", args...)
+	return
+}
+
+// ZAddNX .
+// Redis Zadd 命令用于将一个或多个成员元素及其分数值加入到有序集当中。
+// 如果某个成员已经是有序集的成员，那么更新这个成员的分数值，并通过重新插入这个成员元素，来保证该成员在正确的位置上。
+// 分数值可以是整数值或双精度浮点数。
+// 如果有序集合 key 不存在，则创建一个空的有序集并执行 ZADD 操作。
+// 当 key 存在但不是有序集类型时，返回一个错误。
+// 注意： 在 Redis 2.4 版本以前， ZADD 每次只能添加一个元素。
+// XX: 仅仅更新存在的成员，不添加新成员。
+// NX: 不更新存在的成员。只添加新成员。
+func ZAddNX(ctx context.Context, key string, members ...Z) (reply interface{}, err error) {
+	const n = 2
+	a := make([]interface{}, n+2*len(members))
+	a[0], a[1] = key, "nx"
+	args := zAdd(a, n, members...)
+	reply, err = _client.Do(ctx, "zadd", args...)
+	return
+}
+
+// ZAddXX .
+// Redis Zadd 命令用于将一个或多个成员元素及其分数值加入到有序集当中。
+// 如果某个成员已经是有序集的成员，那么更新这个成员的分数值，并通过重新插入这个成员元素，来保证该成员在正确的位置上。
+// 分数值可以是整数值或双精度浮点数。
+// 如果有序集合 key 不存在，则创建一个空的有序集并执行 ZADD 操作。
+// 当 key 存在但不是有序集类型时，返回一个错误。
+// 注意： 在 Redis 2.4 版本以前， ZADD 每次只能添加一个元素。
+// XX: 仅仅更新存在的成员，不添加新成员。
+// NX: 不更新存在的成员。只添加新成员。
+func ZAddXX(ctx context.Context, key string, members ...Z) (reply interface{}, err error) {
+	const n = 2
+	a := make([]interface{}, n+2*len(members))
+	a[0], a[1] = key, "xx"
+	args := zAdd(a, n, members...)
+	reply, err = _client.Do(ctx, "zadd", args...)
+	return
+}
+
+// ZAddCh .
+// Redis Zadd 命令用于将一个或多个成员元素及其分数值加入到有序集当中。
+// 如果某个成员已经是有序集的成员，那么更新这个成员的分数值，并通过重新插入这个成员元素，来保证该成员在正确的位置上。
+// 分数值可以是整数值或双精度浮点数。
+// 如果有序集合 key 不存在，则创建一个空的有序集并执行 ZADD 操作。
+// 当 key 存在但不是有序集类型时，返回一个错误。
+// 注意： 在 Redis 2.4 版本以前， ZADD 每次只能添加一个元素。
+// XX: 仅仅更新存在的成员，不添加新成员。
+// NX: 不更新存在的成员。只添加新成员。
+// CH: 修改返回值为发生变化的成员总数，原始是返回新添加成员的总数 (CH 是 changed 的意思)。
+// 更改的元素是新添加的成员，已经存在的成员更新分数。 所以在命令中指定的成员有相同的分数将不被计算在内。
+// 注：在通常情况下，ZADD返回值只计算新添加成员的数量。
+func ZAddCh(ctx context.Context, key string, members ...Z) (reply interface{}, err error) {
+	const n = 2
+	a := make([]interface{}, n+2*len(members))
+	a[0], a[1] = key, "ch"
+	args := zAdd(a, n, members...)
+	reply, err = _client.Do(ctx, "zadd", args...)
+	return
+}
+
+// ZAddNXCh .
+// Redis Zadd 命令用于将一个或多个成员元素及其分数值加入到有序集当中。
+// 如果某个成员已经是有序集的成员，那么更新这个成员的分数值，并通过重新插入这个成员元素，来保证该成员在正确的位置上。
+// 分数值可以是整数值或双精度浮点数。
+// 如果有序集合 key 不存在，则创建一个空的有序集并执行 ZADD 操作。
+// 当 key 存在但不是有序集类型时，返回一个错误。
+// 注意： 在 Redis 2.4 版本以前， ZADD 每次只能添加一个元素。
+// XX: 仅仅更新存在的成员，不添加新成员。
+// NX: 不更新存在的成员。只添加新成员。
+// CH: 修改返回值为发生变化的成员总数，原始是返回新添加成员的总数 (CH 是 changed 的意思)。
+// 更改的元素是新添加的成员，已经存在的成员更新分数。 所以在命令中指定的成员有相同的分数将不被计算在内。
+// 注：在通常情况下，ZADD返回值只计算新添加成员的数量。
+func ZAddNXCh(ctx context.Context, key string, members ...Z) (reply interface{}, err error) {
+	const n = 3
+	a := make([]interface{}, n+2*len(members))
+	a[0], a[1], a[2] = key, "nx", "ch"
+	args := zAdd(a, n, members...)
+	reply, err = _client.Do(ctx, "zadd", args...)
+	return
+}
+
+// ZAddXXCh .
+// Redis Zadd 命令用于将一个或多个成员元素及其分数值加入到有序集当中。
+// 如果某个成员已经是有序集的成员，那么更新这个成员的分数值，并通过重新插入这个成员元素，来保证该成员在正确的位置上。
+// 分数值可以是整数值或双精度浮点数。
+// 如果有序集合 key 不存在，则创建一个空的有序集并执行 ZADD 操作。
+// 当 key 存在但不是有序集类型时，返回一个错误。
+// 注意： 在 Redis 2.4 版本以前， ZADD 每次只能添加一个元素。
+// XX: 仅仅更新存在的成员，不添加新成员。
+// NX: 不更新存在的成员。只添加新成员。
+// CH: 修改返回值为发生变化的成员总数，原始是返回新添加成员的总数 (CH 是 changed 的意思)。
+// 更改的元素是新添加的成员，已经存在的成员更新分数。 所以在命令中指定的成员有相同的分数将不被计算在内。
+// 注：在通常情况下，ZADD返回值只计算新添加成员的数量。
+func ZAddXXCh(ctx context.Context, key string, members ...Z) (reply interface{}, err error) {
+	const n = 3
+	a := make([]interface{}, n+2*len(members))
+	a[0], a[1], a[2] = key, "xx", "ch"
+	args := zAdd(a, n, members...)
+	reply, err = _client.Do(ctx, "zadd", args...)
+	return
+}
+
+// zIncr .
+func zIncr(a []interface{}, n int, members ...Z) []interface{} {
+	for i, m := range members {
+		a[n+2*i] = m.Score
+		a[n+2*i+1] = m.Member
+	}
+	return a
+}
+
+// ZIncr .
+// Redis Zadd 命令用于将一个或多个成员元素及其分数值加入到有序集当中。
+// 如果某个成员已经是有序集的成员，那么更新这个成员的分数值，并通过重新插入这个成员元素，来保证该成员在正确的位置上。
+// 分数值可以是整数值或双精度浮点数。
+// 如果有序集合 key 不存在，则创建一个空的有序集并执行 ZADD 操作。
+// 当 key 存在但不是有序集类型时，返回一个错误。
+// 注意： 在 Redis 2.4 版本以前， ZADD 每次只能添加一个元素。
+// XX: 仅仅更新存在的成员，不添加新成员。
+// NX: 不更新存在的成员。只添加新成员。
+// INCR: 当ZADD指定这个选项时，成员的操作就等同ZINCRBY命令，对成员的分数进行递增操作。
+func ZIncr(ctx context.Context, key string, member Z) (reply interface{}, err error) {
+	const n = 2
+	a := make([]interface{}, n+2)
+	a[0], a[1] = key, "incr"
+	args := zIncr(a, n, member)
+	reply, err = _client.Do(ctx, "zadd", args...)
+	return
+}
+
+// ZIncrNX .
+// Redis Zadd 命令用于将一个或多个成员元素及其分数值加入到有序集当中。
+// 如果某个成员已经是有序集的成员，那么更新这个成员的分数值，并通过重新插入这个成员元素，来保证该成员在正确的位置上。
+// 分数值可以是整数值或双精度浮点数。
+// 如果有序集合 key 不存在，则创建一个空的有序集并执行 ZADD 操作。
+// 当 key 存在但不是有序集类型时，返回一个错误。
+// 注意： 在 Redis 2.4 版本以前， ZADD 每次只能添加一个元素。
+// XX: 仅仅更新存在的成员，不添加新成员。
+// NX: 不更新存在的成员。只添加新成员。
+// INCR: 当ZADD指定这个选项时，成员的操作就等同ZINCRBY命令，对成员的分数进行递增操作。
+func ZIncrNX(ctx context.Context, key string, member Z) (reply interface{}, err error) {
+	const n = 3
+	a := make([]interface{}, n+2)
+	a[0], a[1], a[2] = key, "incr", "nx"
+	args := zIncr(a, n, member)
+	reply, err = _client.Do(ctx, "zadd", args...)
+	return
+}
+
+// ZIncrXX .
+// Redis Zadd 命令用于将一个或多个成员元素及其分数值加入到有序集当中。
+// 如果某个成员已经是有序集的成员，那么更新这个成员的分数值，并通过重新插入这个成员元素，来保证该成员在正确的位置上。
+// 分数值可以是整数值或双精度浮点数。
+// 如果有序集合 key 不存在，则创建一个空的有序集并执行 ZADD 操作。
+// 当 key 存在但不是有序集类型时，返回一个错误。
+// 注意： 在 Redis 2.4 版本以前， ZADD 每次只能添加一个元素。
+// XX: 仅仅更新存在的成员，不添加新成员。
+// NX: 不更新存在的成员。只添加新成员。
+// INCR: 当ZADD指定这个选项时，成员的操作就等同ZINCRBY命令，对成员的分数进行递增操作。
+func ZIncrXX(ctx context.Context, key string, member Z) (reply interface{}, err error) {
+	const n = 3
+	a := make([]interface{}, n+2)
+	a[0], a[1], a[2] = key, "incr", "xx"
+	args := zIncr(a, n, member)
+	reply, err = _client.Do(ctx, "zadd", args...)
+	return
+}
+
+// ZCard .
+// Redis ZCARD 命令用于返回有序集的成员个数。
+// 整数: 返回有序集的成员个数，当 key 不存在时，返回 0 。
+func ZCard(ctx context.Context, key string) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "zcard", key)
+	return
+}
+
+// ZCount .
+// Redis Zcount 命令用于计算有序集合中指定分数区间的成员数量。
+// 分数值在 min 和 max 之间的成员的数量。
+func ZCount(ctx context.Context, key, min, max string) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "zcount", key, min, max)
+	return
+}
+
+// ZLexCount .
+// Redis Zlexcount 命令在计算有序集合中指定字典区间内成员数量。
+func ZLexCount(ctx context.Context, key, min, max string) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "zlexcount", key, min, max)
+	return
+}
+
+// ZIncrBy .
+// Redis Zincrby 命令对有序集合中指定成员的分数加上增量 increment
+// 可以通过传递一个负数值 increment ，让分数减去相应的值，比如 ZINCRBY key -5 member ，就是让 member 的 score 值减去 5 。
+// 当 key 不存在，或分数不是 key 的成员时， ZINCRBY key increment member 等同于 ZADD key increment member 。
+// 当 key 不是有序集类型时，返回一个错误。
+// 分数值可以是整数值或双精度浮点数。
+func ZIncrBy(ctx context.Context, key string, increment float64, member string) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "zincrby", key, increment, member)
+	return
+}
+
+// ZInterStore .
+// Redis Zinterstore 命令计算给定的一个或多个有序集的交集，
+// 其中给定 key 的数量必须以 numkeys 参数指定，并将该交集(结果集)储存到 destination 。
+// 默认情况下，结果集中某个成员的分数值是所有给定集下该成员分数值之和。
+// [WEIGHTS weight [weight …]] ～ 指定参与交集运算各集合score的权重参数
+// [AGGREGATE SUM|MIN|MAX] ～ 指定交集中元素的score的取值方式，例如：sum 等于各集合中该元素的score乘以权重求和
+// 结果集中元素score为 取值方式计算各集合中该元素score乘以权重结果
+// -----
+// 例子 ：取zkey1 和zkey2 2个有序集合的交集 保存至有序集合zkey3,权重配置为 10 和 1（zkey3若不存在则新建，若存在则覆盖）
+// zinterstore zkey3 2 zkey1 zkey2 weights 10 1
+// zkey3 score = (zkey1 score)*10 + (zkey2 score)*1
+// 例子 ：取zkey1 和zkey2 2个有序集合的交集 保存至有序集合zkey3,取值方式为min（zkey3若不存在则新建，若存在则覆盖）
+// zkey3 score = min((zkey1 score)*1, (zkey2 score)*1)
+func ZInterStore(ctx context.Context, destination string, store ZStore, keys ...string) (reply interface{}, err error) {
+	args := make([]interface{}, 2+len(keys))
+	args[0] = destination
+	args[1] = len(keys)
+	for i, key := range keys {
+		args[3+i] = key
+	}
+	if len(store.Weights) > 0 {
+		args = append(args, "weights")
+		for _, weight := range store.Weights {
+			args = append(args, weight)
+		}
+	}
+	if store.Aggregate != "" {
+		args = append(args, "aggregate", store.Aggregate)
+	}
+	reply, err = _client.Do(ctx, "zinterstore", args...)
+	return
+}
+
+// ZPopMax .
+// ZPOPMAX 命令用于移除并弹出有序集合中分值最大的 count 个元素：
+func ZPopMax(ctx context.Context, key string, count ...int64) (reply interface{}, err error) {
+	args := []interface{}{key}
+
+	switch len(count) {
+	case 0:
+		break
+	case 1:
+		args = append(args, count[0])
+	default:
+		panic("too many arguments")
+	}
+	reply, err = _client.Do(ctx, "zpopmax", args...)
+	return
+}
+
+// ZPopMin .
+// ZPOPMIN 命令则用于移除并弹出有序集合中分值最小的 count 个元素：
+func ZPopMin(ctx context.Context, key string, count ...int64) (reply interface{}, err error) {
+	args := []interface{}{key}
+
+	switch len(count) {
+	case 0:
+		break
+	case 1:
+		args = append(args, count[0])
+	default:
+		panic("too many arguments")
+	}
+	reply, err = _client.Do(ctx, "zpopmin", args...)
+	return
+}
+
+// zRange .
+func zRange(key string, start, stop int64, withScores bool) []interface{} {
+	args := []interface{}{
+		key,
+		start,
+		stop,
+	}
+	if withScores {
+		args = append(args, "withscores")
+	}
+	return args
+}
+
+// ZRange .
+// Redis Zrange 返回有序集中，指定区间内的成员。
+// 其中成员的位置按分数值递增(从小到大)来排序。
+// 具有相同分数值的成员按字典序(lexicographical order )来排列。
+// 如果你需要成员按
+// 值递减(从大到小)来排列，请使用 ZREVRANGE 命令。
+// 下标参数 start 和 stop 都以 0 为底，也就是说，以 0 表示有序集第一个成员，以 1 表示有序集第二个成员，以此类推。
+// 你也可以使用负数下标，以 -1 表示最后一个成员， -2 表示倒数第二个成员，以此类推。
+// 指定区间内，带有分数值(可选)的有序集成员的列表。
+func ZRange(ctx context.Context, key string, start, stop int64) (reply interface{}, err error) {
+	args := zRange(key, start, start, false)
+	reply, err = _client.Do(ctx, "zrange", args...)
+	return
+}
+
+// ZRangeWithScores .
+// Redis Zrange 返回有序集中，指定区间内的成员。
+// 其中成员的位置按分数值递增(从小到大)来排序。
+// 具有相同分数值的成员按字典序(lexicographical order )来排列。
+// 如果你需要成员按
+// 值递减(从大到小)来排列，请使用 ZREVRANGE 命令。
+// 下标参数 start 和 stop 都以 0 为底，也就是说，以 0 表示有序集第一个成员，以 1 表示有序集第二个成员，以此类推。
+// 你也可以使用负数下标，以 -1 表示最后一个成员， -2 表示倒数第二个成员，以此类推。
+// 指定区间内，带有分数值(可选)的有序集成员的列表。
+func ZRangeWithScores(ctx context.Context, key string, start, stop int64) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "zrange", key, start, stop, "withscores")
+	return
+}
+
+// ZRangeBy .
+type ZRangeBy struct {
+	Min, Max      string
+	Offset, Count int64
+}
+
+// zRangeBy .
+func zRangeBy(key string, opt ZRangeBy, withScores bool) []interface{} {
+	args := []interface{}{key, opt.Min, opt.Max}
+	if withScores {
+		args = append(args, "withscores")
+	}
+	if opt.Offset != 0 || opt.Count != 0 {
+		args = append(
+			args,
+			"limit",
+			opt.Offset,
+			opt.Count,
+		)
+	}
+	return args
+}
+
+// ZRangeByScore .
+// Redis Zrangebyscore 返回有序集合中指定分数区间的成员列表。有序集成员按分数值递增(从小到大)次序排列。
+// 具有相同分数值的成员按字典序来排列(该属性是有序集提供的，不需要额外的计算)。
+// 默认情况下，区间的取值使用闭区间 (小于等于或大于等于)，你也可以通过给参数前增加 ( 符号来使用可选的开区间 (小于或大于)。
+func ZRangeByScore(ctx context.Context, key string, opt ZRangeBy) (reply interface{}, err error) {
+	args := zRangeBy(key, opt, false)
+	reply, err = _client.Do(ctx, "zrangebyscore", args...)
+	return
+}
+
+// ZRangeByLex .
+// Redis Zrangebylex 通过字典区间返回有序集合的成员。
+func ZRangeByLex(ctx context.Context, key string, opt ZRangeBy) (reply interface{}, err error) {
+	args := zRangeBy(key, opt, false)
+	reply, err = _client.Do(ctx, "zrangebylex", args...)
+	return
+}
+
+// ZRangeByScoreWithScores .
+// Redis Zrangebylex 通过字典区间返回有序集合的成员。
+func ZRangeByScoreWithScores(ctx context.Context, key string, opt ZRangeBy) (reply interface{}, err error) {
+	args := []interface{}{key, opt.Min, opt.Max, "withscores"}
+	if opt.Offset != 0 || opt.Count != 0 {
+		args = append(
+			args,
+			"limit",
+			opt.Offset,
+			opt.Count,
+		)
+	}
+	reply, err = _client.Do(ctx, "zrangebyscore", args...)
+	return
+}
+
+// ZRank .
+// Redis Zrank 返回有序集中指定成员的排名。其中有序集成员按分数值递增(从小到大)顺序排列。
+func ZRank(ctx context.Context, key, member string) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "zrank", key, member)
+	return
+}
+
+// ZRem .
+// Redis Zrem 命令用于移除有序集中的一个或多个成员，不存在的成员将被忽略。
+// 当 key 存在但不是有序集类型时，返回一个错误。
+// 注意： 在 Redis 2.4 版本以前， ZREM 每次只能删除一个元素。
+func ZRem(ctx context.Context, key string, members ...interface{}) (reply interface{}, err error) {
+	args := make([]interface{}, 1, 1+len(members))
+	args[0] = key
+	args = appendArgs(args, members)
+	reply, err = _client.Do(ctx, "zrem", args...)
+	return
+}
+
+// ZRemRangeByRank .
+// Redis Zremrangebyrank 命令用于移除有序集中，指定排名(rank)区间内的所有成员。
+func ZRemRangeByRank(ctx context.Context, key string, start, stop int64) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "zremrangebyrank", key, start, stop)
+	return
+}
+
+// ZRemRangeByScore .
+// Redis Zremrangebyscore 命令用于移除有序集中，指定分数（score）区间内的所有成员。
+func ZRemRangeByScore(ctx context.Context, key, min, max string) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "zremrangebyscore", key, min, max)
+	return
+}
+
+// ZRemRangeByLex .
+// Redis Zremrangebylex 命令用于移除有序集合中给定的字典区间的所有成员。
+func ZRemRangeByLex(ctx context.Context, key, min, max string) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "zremrangebylex", key, min, max)
+	return
+}
+
+// ZRevRange .
+// Redis Zrevrange 命令返回有序集中，指定区间内的成员。
+// 其中成员的位置按分数值递减(从大到小)来排列。
+// 具有相同分数值的成员按字典序的逆序(reverse lexicographical order)排列。
+// 除了成员按分数值递减的次序排列这一点外， ZREVRANGE 命令的其他方面和 ZRANGE 命令一样。
+func ZRevRange(ctx context.Context, key string, start, stop int64) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "zrevrange", key, start, stop)
+	return
+}
+
+// ZRevRangeWithScores .
+// Redis Zrevrange 命令返回有序集中，指定区间内的成员。
+// 其中成员的位置按分数值递减(从大到小)来排列。
+// 具有相同分数值的成员按字典序的逆序(reverse lexicographical order)排列。
+// 除了成员按分数值递减的次序排列这一点外， ZREVRANGE 命令的其他方面和 ZRANGE 命令一样。
+func ZRevRangeWithScores(ctx context.Context, key string, start, stop int64) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "zrevrange", key, start, stop, "withscores")
+	return
+}
+
+// zRevRangeBy .
+func zRevRangeBy(key string, opt ZRangeBy) []interface{} {
+	args := []interface{}{key, opt.Max, opt.Min}
+	if opt.Offset != 0 || opt.Count != 0 {
+		args = append(
+			args,
+			"limit",
+			opt.Offset,
+			opt.Count,
+		)
+	}
+	return args
+}
+
+// ZRevRangeByScore .
+// Redis Zrevrangebyscore 返回有序集中指定分数区间内的所有的成员。有序集成员按分数值递减(从大到小)的次序排列。
+// 具有相同分数值的成员按字典序的逆序(reverse lexicographical order )排列。
+// 除了成员按分数值递减的次序排列这一点外， ZREVRANGEBYSCORE 命令的其他方面和 ZRANGEBYSCORE 命令一样。
+func ZRevRangeByScore(ctx context.Context, key string, opt ZRangeBy) (reply interface{}, err error) {
+	args := zRevRangeBy(key, opt)
+	reply, err = _client.Do(ctx, "zrevrangebyscore", args...)
+	return
+}
+
+// ZRevRangeByLex .
+// ZREVRANGEBYLEX 返回指定成员区间内的成员，按成员字典倒序排序, 分数必须相同。
+// 在某些业务场景中,需要对一个字符串数组按名称的字典顺序进行倒序排列时,可以使用Redis中SortSet这种数据结构来处理。
+func ZRevRangeByLex(ctx context.Context, key string, opt ZRangeBy) (reply interface{}, err error) {
+	args := zRevRangeBy(key, opt)
+	reply, err = _client.Do(ctx, "zrevrangebylex", args...)
+	return
+}
+
+// ZRevRangeByScoreWithScores .
+// Redis Zrevrangebyscore 返回有序集中指定分数区间内的所有的成员。有序集成员按分数值递减(从大到小)的次序排列。
+// 具有相同分数值的成员按字典序的逆序(reverse lexicographical order )排列。
+// 除了成员按分数值递减的次序排列这一点外， ZREVRANGEBYSCORE 命令的其他方面和 ZRANGEBYSCORE 命令一样。
+func ZRevRangeByScoreWithScores(ctx context.Context, key string, opt ZRangeBy) (reply interface{}, err error) {
+	args := []interface{}{key, opt.Max, opt.Min, "withscores"}
+	if opt.Offset != 0 || opt.Count != 0 {
+		args = append(
+			args,
+			"limit",
+			opt.Offset,
+			opt.Count,
+		)
+	}
+	reply, err = _client.Do(ctx, "zrevrangebyscore", args...)
+	return
+}
+
+// ZRevRank .
+// Redis Zrevrank 命令返回有序集中成员的排名。其中有序集成员按分数值递减(从大到小)排序。
+// 排名以 0 为底，也就是说， 分数值最大的成员排名为 0 。
+// 使用 ZRANK 命令可以获得成员按分数值递增(从小到大)排列的排名。
+func ZRevRank(ctx context.Context, key, member string) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "zrevrank", key, member)
+	return
+}
+
+// ZScore .
+// Redis Zscore 命令返回有序集中，成员的分数值。 如果成员元素不是有序集 key 的成员，或 key 不存在，返回 nil 。
+func ZScore(ctx context.Context, key, member string) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "zscore", key, member)
+	return
+}
+
+// ZUnionStore .
+// Redis Zunionstore 命令计算给定的一个或多个有序集的并集，
+// 其中给定 key 的数量必须以 numkeys 参数指定，并将该并集(结果集)储存到 destination 。
+// 默认情况下，结果集中某个成员的分数值是所有给定集下该成员分数值之和 。
+// -----
+// 例子 ：取zkey1 和zkey2 2个有序集合的并集 保存至有序集合zkey3,权重配置为 10 和 1（zkey3若不存在则新建，若存在则覆盖）
+// zinterstore zkey3 2 zkey1 zkey2 weights 10 1
+// zkey3 score = (zkey1 score)*10 + (zkey2 score)*1
+// 例子 ：取zkey1 和zkey2 2个有序集合的并集 保存至有序集合zkey3,取值方式为min（zkey3若不存在则新建，若存在则覆盖）
+// zkey3 score = min((zkey1 score)*1, (zkey2 score)*1)
+func ZUnionStore(ctx context.Context, dest string, store ZStore, keys ...string) (reply interface{}, err error) {
+	args := make([]interface{}, 2+len(keys))
+	args[0] = dest
+	args[1] = len(keys)
+	for i, key := range keys {
+		args[2+i] = key
+	}
+	if len(store.Weights) > 0 {
+		args = append(args, "weights")
+		for _, weight := range store.Weights {
+			args = append(args, weight)
+		}
+	}
+	if store.Aggregate != "" {
+		args = append(args, "aggregate", store.Aggregate)
+	}
+	reply, err = _client.Do(ctx, "zunionstore", args...)
+	return
+}
+
+//------------------------------------------------------------------------------
