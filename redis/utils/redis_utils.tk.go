@@ -2474,3 +2474,157 @@ func Segfault(ctx context.Context, key string) (reply interface{}, err error) {
 }
 
 //------------------------------------------------------------------------------
+
+// GeoLocation is used with GeoAdd to add geospatial location.
+type GeoLocation struct {
+	Name                      string
+	Longitude, Latitude, Dist float64
+	GeoHash                   int64
+}
+
+// GeoRadiusQuery is used with GeoRadius to query geospatial index.
+type GeoRadiusQuery struct {
+	Radius float64
+	// Can be m, km, ft, or mi. Default is km.
+	Unit        string
+	WithCoord   bool
+	WithDist    bool
+	WithGeoHash bool
+	Count       int
+	// Can be ASC or DESC. Default is no sort order.
+	Sort      string
+	Store     string
+	StoreDist string
+}
+
+// GeoAdd .
+// geoadd：添加地理位置的坐标。
+func GeoAdd(ctx context.Context, key string, geoLocation ...*GeoLocation) (reply interface{}, err error) {
+	args := make([]interface{}, 1+3*len(geoLocation))
+	args[0] = key
+	for i, eachLoc := range geoLocation {
+		args[1+3*i] = eachLoc.Longitude
+		args[1+3*i+1] = eachLoc.Latitude
+		args[1+3*i+2] = eachLoc.Name
+	}
+	reply, err = _client.Do(ctx, "geoadd", args...)
+	return
+}
+
+// GeoPos .
+// geopos：获取地理位置的坐标。
+func GeoPos(ctx context.Context, key string, members ...string) (reply interface{}, err error) {
+	args := make([]interface{}, 1+len(members))
+	args[0] = key
+	for i, member := range members {
+		args[1+i] = member
+	}
+	reply, err = _client.Do(ctx, "geopos", args...)
+	return
+}
+
+// NewGeoLocationArgs .
+func NewGeoLocationArgs(q *GeoRadiusQuery, args ...interface{}) []interface{} {
+	args = append(args, q.Radius)
+	if q.Unit != "" {
+		args = append(args, q.Unit)
+	} else {
+		args = append(args, "km")
+	}
+	if q.WithCoord {
+		args = append(args, "withcoord")
+	}
+	if q.WithDist {
+		args = append(args, "withdist")
+	}
+	if q.WithGeoHash {
+		args = append(args, "withhash")
+	}
+	if q.Count > 0 {
+		args = append(args, "count", q.Count)
+	}
+	if q.Sort != "" {
+		args = append(args, q.Sort)
+	}
+	if q.Store != "" {
+		args = append(args, "store")
+		args = append(args, q.Store)
+	}
+	if q.StoreDist != "" {
+		args = append(args, "storedist")
+		args = append(args, q.StoreDist)
+	}
+	return args
+}
+
+// GeoRadius .
+// georadius：根据用户给定的经纬度坐标来获取指定范围内的地理位置集合。
+// 由于 GEORADIUS 和 GEORADIUSBYMEMBER 有一个STORE和STOREDIST选择，他们在技术上标记为在 Redis 的命令表写入命令。
+// 因为这个原因，只读从属会标记它们，即使连接处于只读模式，Redis 集群从属也会将它们重定向到主实例（请参阅 Redis 集群的 READONLY 命令）。
+// 打破与过去的兼容性被认为是被拒绝的，至少对于 Redis 4.0 来说是这样，所以添加了两个只读的命令变体。
+// 他们完全像原来的命令，但拒绝STORE和STOREDIST选项。这两个变量被称为GEORADIUS_RO和GEORADIUSBYMEMBER_RO，并能安全地从设备中使用。
+func GeoRadius(ctx context.Context, key string, longitude, latitude float64, query *GeoRadiusQuery) (reply interface{}, err error) {
+	args := NewGeoLocationArgs(query, key, longitude, latitude)
+	reply, err = _client.Do(ctx, "georadius", args...)
+	return
+}
+
+// GeoRadiusRO .
+// georadius：根据用户给定的经纬度坐标来获取指定范围内的地理位置集合。
+// 由于 GEORADIUS 和 GEORADIUSBYMEMBER 有一个STORE和STOREDIST选择，他们在技术上标记为在 Redis 的命令表写入命令。
+// 因为这个原因，只读从属会标记它们，即使连接处于只读模式，Redis 集群从属也会将它们重定向到主实例（请参阅 Redis 集群的 READONLY 命令）。
+// 打破与过去的兼容性被认为是被拒绝的，至少对于 Redis 4.0 来说是这样，所以添加了两个只读的命令变体。
+// 他们完全像原来的命令，但拒绝STORE和STOREDIST选项。这两个变量被称为GEORADIUS_RO和GEORADIUSBYMEMBER_RO，并能安全地从设备中使用。
+func GeoRadiusRO(ctx context.Context, key string, longitude, latitude float64, query *GeoRadiusQuery) (reply interface{}, err error) {
+	args := NewGeoLocationArgs(query, key, longitude, latitude)
+	reply, err = _client.Do(ctx, "georadius_ro", args...)
+	return
+}
+
+// GeoRadiusByMember .
+// georadiusbymember：根据储存在位置集合里面的某个地点获取指定范围内的地理位置集合。
+// 由于 GEORADIUS 和 GEORADIUSBYMEMBER 有一个STORE和STOREDIST选择，他们在技术上标记为在 Redis 的命令表写入命令。
+// 因为这个原因，只读从属会标记它们，即使连接处于只读模式，Redis 集群从属也会将它们重定向到主实例（请参阅 Redis 集群的 READONLY 命令）。
+// 打破与过去的兼容性被认为是被拒绝的，至少对于 Redis 4.0 来说是这样，所以添加了两个只读的命令变体。
+// 他们完全像原来的命令，但拒绝STORE和STOREDIST选项。这两个变量被称为GEORADIUS_RO和GEORADIUSBYMEMBER_RO，并能安全地从设备中使用。
+func GeoRadiusByMember(ctx context.Context, key, member string, query *GeoRadiusQuery) (reply interface{}, err error) {
+	args := NewGeoLocationArgs(query, key, member)
+	reply, err = _client.Do(ctx, "georadiusbymember", args...)
+	return
+}
+
+// GeoRadiusByMemberRO .
+// georadiusbymember：根据储存在位置集合里面的某个地点获取指定范围内的地理位置集合。
+// 由于 GEORADIUS 和 GEORADIUSBYMEMBER 有一个STORE和STOREDIST选择，他们在技术上标记为在 Redis 的命令表写入命令。
+// 因为这个原因，只读从属会标记它们，即使连接处于只读模式，Redis 集群从属也会将它们重定向到主实例（请参阅 Redis 集群的 READONLY 命令）。
+// 打破与过去的兼容性被认为是被拒绝的，至少对于 Redis 4.0 来说是这样，所以添加了两个只读的命令变体。
+// 他们完全像原来的命令，但拒绝STORE和STOREDIST选项。这两个变量被称为GEORADIUS_RO和GEORADIUSBYMEMBER_RO，并能安全地从设备中使用。
+func GeoRadiusByMemberRO(ctx context.Context, key, member string, query *GeoRadiusQuery) (reply interface{}, err error) {
+	args := NewGeoLocationArgs(query, key, member)
+	reply, err = _client.Do(ctx, "georadiusbymember_ro", args...)
+	return
+}
+
+// GeoDist .
+// geodist：计算两个位置之间的距离。
+func GeoDist(ctx context.Context, key string, member1, member2, unit string) (reply interface{}, err error) {
+	if unit == "" {
+		unit = "km"
+	}
+	reply, err = _client.Do(ctx, "geodist", key, member1, member2, unit)
+	return
+}
+
+// GeoHash .
+// geohash：返回一个或多个位置对象的 geohash 值。
+func GeoHash(ctx context.Context, key string, members ...string) (reply interface{}, err error) {
+	args := make([]interface{}, 1+len(members))
+	args[0] = key
+	for i, member := range members {
+		args[1+i] = member
+	}
+	reply, err = _client.Do(ctx, "geohash", args...)
+	return
+}
+
+//------------------------------------------------------------------------------
