@@ -2628,3 +2628,35 @@ func GeoHash(ctx context.Context, key string, members ...string) (reply interfac
 }
 
 //------------------------------------------------------------------------------
+
+// ReadOnly .
+// 只读模式
+func ReadOnly(ctx context.Context) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "readonly")
+	return
+}
+
+// ReadWrite .
+// 读写模式
+func ReadWrite(ctx context.Context) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "readwrite")
+	return
+}
+
+//------------------------------------------------------------------------------
+
+// MemoryUsage .
+// 命令MEMORY USAGE 给出一个key和它值在RAM中占用的字节数
+// 返回的结果是key的值以及为管理该key分配的内存总字节数
+// 对于嵌套数据类型，可以使用选项SAMPLES，其中COUNT表示抽样的元素个数，默认值为5。当需要抽样所有元素时，使用SAMPLES 0
+func MemoryUsage(ctx context.Context, key string, samples ...int) (reply interface{}, err error) {
+	args := []interface{}{"usage", key}
+	if len(samples) > 0 {
+		if len(samples) != 1 {
+			panic("MemoryUsage expects single sample count")
+		}
+		args = append(args, "SAMPLES", samples[0])
+	}
+	reply, err = _client.Do(ctx, "memory", args...)
+	return
+}
