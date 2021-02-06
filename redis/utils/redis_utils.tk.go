@@ -2,9 +2,11 @@ package tkredisutils
 
 import (
 	"context"
+	"fmt"
 	"github.com/go-kratos/kratos/pkg/cache/redis"
 	"github.com/go-kratos/kratos/pkg/conf/env"
 	"github.com/pkg/errors"
+	"io"
 	"sync"
 	"time"
 )
@@ -2044,6 +2046,342 @@ func ZUnionStore(ctx context.Context, dest string, store ZStore, keys ...string)
 		args = append(args, "aggregate", store.Aggregate)
 	}
 	reply, err = _client.Do(ctx, "zunionstore", args...)
+	return
+}
+
+//------------------------------------------------------------------------------
+
+// PFAdd .
+// Redis Pfadd 命令将所有元素参数添加到 HyperLogLog 数据结构中。
+func PFAdd(ctx context.Context, key string, els ...interface{}) (reply interface{}, err error) {
+	args := make([]interface{}, 1, 1+len(els))
+	args[0] = key
+	args = appendArgs(args, els)
+	reply, err = _client.Do(ctx, "pfadd", args...)
+	return
+}
+
+// PFCount .
+// Redis Pfcount 命令返回给定 HyperLogLog 的基数估算值。
+// 整数，返回给定 HyperLogLog 的基数值，如果多个 HyperLogLog 则返回基数估值之和。
+func PFCount(ctx context.Context, keys ...string) (reply interface{}, err error) {
+	args := make([]interface{}, len(keys))
+	for i, key := range keys {
+		args[i] = key
+	}
+	reply, err = _client.Do(ctx, "pfcount", args...)
+	return
+}
+
+// PFMerge .
+// Redis PFMERGE 命令将多个 HyperLogLog 合并为一个 HyperLogLog ，
+// 合并后的 HyperLogLog 的基数估算值是通过对所有 给定 HyperLogLog 进行并集计算得出的。
+func PFMerge(ctx context.Context, dest string, keys ...string) (reply interface{}, err error) {
+	args := make([]interface{}, 1+len(keys))
+	args[0] = dest
+	for i, key := range keys {
+		args[1+i] = key
+	}
+	reply, err = _client.Do(ctx, "pfmerge", args...)
+	return
+}
+
+//------------------------------------------------------------------------------
+
+// BgRewriteAOF .
+// Redis Bgrewriteaof 命令用于异步执行一个 AOF（AppendOnly File） 文件重写操作。重写会创建一个当前 AOF 文件的体积优化版本。
+// 即使 Bgrewriteaof 执行失败，也不会有任何数据丢失，因为旧的 AOF 文件在 Bgrewriteaof 成功之前不会被修改。
+// 注意：从 Redis 2.4 开始， AOF 重写由 Redis 自行触发， BGREWRITEAOF 仅仅用于手动触发重写操作。
+func BgRewriteAOF(ctx context.Context) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "bgrewriteaof")
+	return
+}
+
+// BgSave .
+// Redis Bgsave 命令用于在后台异步保存当前数据库的数据到磁盘。
+// BGSAVE 命令执行之后立即返回 OK ，
+// 然后 Redis fork 出一个新子进程，原来的 Redis 进程(父进程)继续处理客户端请求，而子进程则负责将数据保存到磁盘，然后退出。
+func BgSave(ctx context.Context) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "bgsave")
+	return
+}
+
+// ClientKill .
+// Redis Client Kill 命令用于关闭客户端连接。
+func ClientKill(ctx context.Context, ipPort string) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "client", "kill", ipPort)
+	return
+}
+
+// ClientKillByFilter is new style synx, while the ClientKill is old
+// CLIENT KILL <option> [value] ... <option> [value]
+func ClientKillByFilter(ctx context.Context, keys ...string) (reply interface{}, err error) {
+	args := make([]interface{}, 1+len(keys))
+	args[0] = "kill"
+	for i, key := range keys {
+		args[1+i] = key
+	}
+	reply, err = _client.Do(ctx, "client", args...)
+	return
+}
+
+// ClientList .
+// Redis Client List 命令用于返回所有连接到服务器的客户端信息和统计数据。
+func ClientList(ctx context.Context) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "client", "list")
+	return
+}
+
+// ClientPause .
+// Redis Client Pause 命令用于阻塞客户端命令一段时间（以毫秒计）。
+func ClientPause(ctx context.Context, dur time.Duration) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "client", "pause", formatMs(dur))
+	return
+}
+
+// ClientID .
+// (error) ERR Syntax error, try CLIENT (LIST | KILL | GETNAME | SETNAME | PAUSE | REPLY)
+func ClientID(ctx context.Context) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "client", "id")
+	return
+}
+
+// ClientUnblock .
+// (error) ERR Syntax error, try CLIENT (LIST | KILL | GETNAME | SETNAME | PAUSE | REPLY)
+func ClientUnblock(ctx context.Context, id int64) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "client", "unblock", id)
+	return
+}
+
+// ClientUnblockWithError .
+// (error) ERR Syntax error, try CLIENT (LIST | KILL | GETNAME | SETNAME | PAUSE | REPLY)
+func ClientUnblockWithError(ctx context.Context, id int64) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "client", "unblock", id, "error")
+	return
+}
+
+// ClientSetName .
+// Redis Client Setname 命令用于指定当前连接的名称。
+// 这个名字会显示在 CLIENT LIST 命令的结果中， 用于识别当前正在与服务器进行连接的客户端。
+func ClientSetName(ctx context.Context, name string) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "client", "setname", name)
+	return
+}
+
+// ConfigGet .
+// Redis Config Get 命令用于获取 redis 服务的配置参数。
+// 在 Redis 2.4 版本中， 有部分参数没有办法用 CONFIG GET 访问，但是在最新的 Redis 2.6 版本中，所有配置参数都已经可以用 CONFIG GET 访问了。
+func ConfigGet(ctx context.Context, parameter string) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "config", "get", parameter)
+	return
+}
+
+// ConfigResetStat .
+// Redis Config Resetstat 命令用于重置 INFO 命令中的某些统计数据，包括：
+// Keyspace hits (键空间命中次数)
+// Keyspace misses (键空间不命中次数)
+// Number of commands processed (执行命令的次数)
+// Number of connections received (连接服务器的次数)
+// Number of expired keys (过期key的数量)
+// Number of rejected connections (被拒绝的连接数量)
+// Latest fork(2) time(最后执行 fork(2) 的时间)
+// The aof_delayed_fsync counter(aof_delayed_fsync 计数器的值)
+func ConfigResetStat(ctx context.Context) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "config", "resetstat")
+	return
+}
+
+// ConfigSet .
+// Redis Config Set 命令可以动态地调整 Redis 服务器的配置(configuration)而无须重启。
+// 你可以使用它修改配置参数，或者改变 Redis 的持久化(Persistence)方式。
+func ConfigSet(ctx context.Context, parameter, value string) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "config", "set", parameter, value)
+	return
+}
+
+// ConfigRewrite .
+// Redis Config rewrite 命令对启动 Redis 服务器时所指定的 redis.conf 配置文件进行改写。
+// CONFIG SET 命令可以对服务器的当前配置进行修改，
+// 而修改后的配置可能和 redis.conf 文件中所描述的配置不一样，
+// CONFIG REWRITE 的作用就是通过尽可能少的修改，
+// 将服务器当前所使用的配置记录到 redis.conf 文件中。
+func ConfigRewrite(ctx context.Context) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "config", "rewrite")
+	return
+}
+
+// DbSize .
+// Redis Dbsize 命令用于返回当前数据库的 key 的数量。
+func DbSize(ctx context.Context) (reply interface{}, err error) {
+	reply, err = DBSize(ctx)
+	return
+}
+
+// DBSize .
+// Redis Dbsize 命令用于返回当前数据库的 key 的数量。
+func DBSize(ctx context.Context) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "dbsize")
+	return
+}
+
+// FlushAll .
+// Redis Flushall 命令用于清空整个 Redis 服务器的数据(删除所有数据库的所有 key )。
+// Redis 4.0 同样给这两个指令也带来了异步化，在指令后面增加 async 参数扔给后台线程销毁，不会阻塞当前线程。
+func FlushAll(ctx context.Context) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "flushall")
+	return
+}
+
+// FlushAllAsync .
+// Redis Flushall 命令用于清空整个 Redis 服务器的数据(删除所有数据库的所有 key )。
+// Redis 4.0 同样给这两个指令也带来了异步化，在指令后面增加 async 参数扔给后台线程销毁，不会阻塞当前线程。
+func FlushAllAsync(ctx context.Context) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "flushall", "async")
+	return
+}
+
+// FlushDb .
+// Redis Flushdb 命令用于清空当前数据库中的所有 key。
+// Redis 4.0 同样给这两个指令也带来了异步化，在指令后面增加 async 参数扔给后台线程销毁，不会阻塞当前线程。
+func FlushDb(ctx context.Context) (reply interface{}, err error) {
+	reply, err = FlushDB(ctx)
+	return
+}
+
+// FlushDB .
+// Redis Flushdb 命令用于清空当前数据库中的所有 key。
+// Redis 4.0 同样给这两个指令也带来了异步化，在指令后面增加 async 参数扔给后台线程销毁，不会阻塞当前线程。
+func FlushDB(ctx context.Context) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "flushdb")
+	return
+}
+
+// FlushDBAsync .
+// Redis Flushdb 命令用于清空当前数据库中的所有 key。
+// Redis 4.0 同样给这两个指令也带来了异步化，在指令后面增加 async 参数扔给后台线程销毁，不会阻塞当前线程。
+func FlushDBAsync(ctx context.Context) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "flushdb", "async")
+	return
+}
+
+// Info .
+// Redis Info 命令以一种易于理解和阅读的格式，返回关于 Redis 服务器的各种信息和统计数值。
+// 通过给定可选的参数 section ，可以让命令只返回某一部分的信息：
+// server : 一般 Redis 服务器信息
+// clients : 已连接客户端信息
+// memory : 内存信息
+// persistence : RDB 和 AOF 的相关信息
+// stats : 一般统计信息
+// replication : 主/从复制信息
+// cpu : CPU 计算量统计信息
+// commandstats : Redis 命令统计信息
+// cluster : Redis 集群信息
+// keyspace : 数据库相关的统计信息
+func Info(ctx context.Context, section ...string) (reply interface{}, err error) {
+	var args []interface{}
+	if len(section) > 0 {
+		args = append(args, section[0])
+	}
+	reply, err = _client.Do(ctx, "info", args...)
+	return
+}
+
+// LastSave .
+// Redis Lastsave 命令返回最近一次 Redis 成功将数据保存到磁盘上的时间，以 UNIX 时间戳格式表示。
+func LastSave(ctx context.Context) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "lastsave")
+	return
+}
+
+// Save .
+// Redis Save 命令执行一个同步保存操作，将当前 Redis 实例的所有数据快照(snapshot)以 RDB 文件的形式保存到硬盘。
+func Save(ctx context.Context) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "save")
+	return
+}
+
+// shutdown .
+func shutdown(ctx context.Context, modifier string) (reply interface{}, err error) {
+	if modifier == "" {
+		reply, err = _client.Do(ctx, "shutdown")
+	} else {
+		reply, err = _client.Do(ctx, "shutdown", modifier)
+	}
+	if err != nil {
+		if err == io.EOF {
+			// Server quit as expected.
+			err = nil
+		}
+	} else {
+		// Server did not quit. String reply contains the reason.
+		err = errors.New(fmt.Sprint(reply))
+	}
+	return
+}
+
+// Shutdown .
+// Redis Shutdown 命令执行以下操作：
+// 停止所有客户端
+// 如果有至少一个保存点在等待，执行 SAVE 命令
+// 如果 AOF 选项被打开，更新 AOF 文件
+// 关闭 redis 服务器(server)
+// 执行失败时返回错误。 执行成功时不返回任何信息，服务器和客户端的连接断开，客户端自动退出。
+func Shutdown(ctx context.Context) (reply interface{}, err error) {
+	reply, err = shutdown(ctx, "")
+	return
+}
+
+// ShutdownSave .
+// Redis Shutdown 命令执行以下操作：
+// 停止所有客户端
+// 如果有至少一个保存点在等待，执行 SAVE 命令
+// 如果 AOF 选项被打开，更新 AOF 文件
+// 关闭 redis 服务器(server)
+// 执行失败时返回错误。 执行成功时不返回任何信息，服务器和客户端的连接断开，客户端自动退出。
+func ShutdownSave(ctx context.Context) (reply interface{}, err error) {
+	reply, err = shutdown(ctx, "save")
+	return
+}
+
+// ShutdownNoSave .
+// Redis Shutdown 命令执行以下操作：
+// 停止所有客户端
+// 如果有至少一个保存点在等待，执行 SAVE 命令
+// 如果 AOF 选项被打开，更新 AOF 文件
+// 关闭 redis 服务器(server)
+// 执行失败时返回错误。 执行成功时不返回任何信息，服务器和客户端的连接断开，客户端自动退出。
+func ShutdownNoSave(ctx context.Context) (reply interface{}, err error) {
+	reply, err = shutdown(ctx, "nosave")
+	return
+}
+
+// SlaveOf .
+// Redis Slaveof 命令可以将当前服务器转变为指定服务器的从属服务器(slave server)。
+// 如果当前服务器已经是某个主服务器(master server)的从属服务器，
+// 那么执行 SLAVEOF host port 将使当前服务器停止对旧主服务器的同步，丢弃旧数据集，转而开始对新主服务器进行同步。
+// 另外，对一个从属服务器执行命令 SLAVEOF NO ONE 将使得这个从属服务器关闭复制功能，并从从属服务器转变回主服务器，原来同步所得的数据集不会被丢弃。
+// 利用『 SLAVEOF NO ONE 不会丢弃同步所得数据集』这个特性，可以在主服务器失败的时候，将从属服务器用作新的主服务器，从而实现无间断运行。
+func SlaveOf(ctx context.Context, host, port string) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "slaveof", host, port)
+	return
+}
+
+// Time .
+// Redis Time 命令用于返回当前服务器时间。
+func Time(ctx context.Context) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "time")
+	return
+}
+
+// SlowLog .
+func SlowLog() {
+	panic("not implemented")
+}
+
+// Sync .
+// Redis Sync 命令用于同步主从服务器。
+func Sync(ctx context.Context) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "sync")
 	return
 }
 
