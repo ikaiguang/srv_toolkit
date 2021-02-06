@@ -2386,3 +2386,91 @@ func Sync(ctx context.Context) (reply interface{}, err error) {
 }
 
 //------------------------------------------------------------------------------
+
+// Eval .
+// Redis Eval 命令使用 Lua 解释器执行脚本。
+func Eval(ctx context.Context, script string, keys []string, args ...interface{}) (reply interface{}, err error) {
+	cmdArgs := make([]interface{}, 2+len(keys), 2+len(keys)+len(args))
+	cmdArgs[0] = script
+	cmdArgs[1] = len(keys)
+	for i, key := range keys {
+		cmdArgs[2+i] = key
+	}
+	cmdArgs = appendArgs(cmdArgs, args)
+	reply, err = _client.Do(ctx, "eval", args...)
+	return
+}
+
+// EvalSha .
+// Redis Evalsha 命令根据给定的 sha1 校验码，执行缓存在服务器中的脚本。
+// 将脚本缓存到服务器的操作可以通过 SCRIPT LOAD 命令进行。
+// 这个命令的其他地方，比如参数的传入方式，都和 EVAL 命令一样。
+func EvalSha(ctx context.Context, sha1 string, keys []string, args ...interface{}) (reply interface{}, err error) {
+	cmdArgs := make([]interface{}, 2+len(keys), 2+len(keys)+len(args))
+	cmdArgs[0] = sha1
+	cmdArgs[1] = len(keys)
+	for i, key := range keys {
+		cmdArgs[2+i] = key
+	}
+	cmdArgs = appendArgs(cmdArgs, args)
+	reply, err = _client.Do(ctx, "evalsha", args...)
+	return
+}
+
+// ScriptExists .
+// Redis Script Exists 命令用于校验指定的脚本是否已经被保存在缓存当中。
+func ScriptExists(ctx context.Context, hashes ...string) (reply interface{}, err error) {
+	args := make([]interface{}, 1+len(hashes))
+	args[0] = "exists"
+	for i, hash := range hashes {
+		args[1+i] = hash
+	}
+	reply, err = _client.Do(ctx, "script", args...)
+	return
+}
+
+// ScriptFlush .
+// Redis Script Flush 命令用于清除所有 Lua 脚本缓存。
+func ScriptFlush(ctx context.Context) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "script", "flush")
+	return
+}
+
+// ScriptKill .
+// Redis Script kill 命令用于杀死当前正在运行的 Lua 脚本，当且仅当这个脚本没有执行过任何写操作时，这个命令才生效。
+// 这个命令主要用于终止运行时间过长的脚本，比如一个因为 BUG 而发生无限循环的脚本。
+// SCRIPT KILL 执行之后，当前正在运行的脚本会被杀死，执行这个脚本的客户端会从 EVAL 命令的阻塞当中退出，并收到一个错误作为返回值。
+func ScriptKill(ctx context.Context) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "script", "kill")
+	return
+}
+
+// ScriptLoad .
+// Redis Script Load 命令用于将脚本 script 添加到脚本缓存中，但并不立即执行这个脚本。
+// EVAL 命令也会将脚本添加到脚本缓存中，但是它会立即对输入的脚本进行求值。
+// 如果给定的脚本已经在缓存里面了，那么不执行任何操作。
+// 在脚本被加入到缓存之后，通过 EVALSHA 命令，可以使用脚本的 SHA1 校验和来调用这个脚本。
+// 脚本可以在缓存中保留无限长的时间，直到执行 SCRIPT FLUSH 为止。
+// 关于使用 Redis 对 Lua 脚本进行求值的更多信息，请参见 EVAL 命令。
+func ScriptLoad(ctx context.Context, script string) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "script", "load", script)
+	return
+}
+
+//------------------------------------------------------------------------------
+
+// DebugObject .
+// Redis Debug Object 命令是一个调试命令，它不应被客户端所使用。
+func DebugObject(ctx context.Context, key string) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "debug", "object", key)
+	return
+}
+
+// Segfault .
+// Redis Debug Segfault 命令执行一个非法的内存访问从而让 Redis 崩溃，仅在开发时用于 BUG 调试。
+func Segfault(ctx context.Context, key string) (reply interface{}, err error) {
+	reply, err = _client.Do(ctx, "debug", "segfault ", key)
+	return
+}
+
+//------------------------------------------------------------------------------
