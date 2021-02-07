@@ -9,13 +9,28 @@ import "github.com/ikaiguang/srv_toolkit/api/api.tk.proto";
 
 /**
  *
+ * @apiDefine JwtAuthCache 授权缓存信息
+ *
+ * @apiSuccess (授权缓存信息) {JwtUserInfo} user_info 用户信息
+ * @apiSuccess (授权缓存信息) {JwtAuthInfo-array} auth_infos 授权信息(数组)
+ *
+ */
+
+// JwtAuthCache cache
+message JwtAuthCache {
+  JwtUserInfo user_info = 1; // 用户信息
+  repeated JwtAuthInfo auth_infos = 2; // 授权信息(数组)
+}
+
+/**
+ *
  * @apiDefine JwtAuthInfo 授权信息
  *
- * @apiSuccess (响应) {string} token_id 授权id
- * @apiSuccess (响应) {tkpb.Platform} platform 平台信息
- * @apiSuccess (响应) {int64} et 失效时间(时间戳:秒)
- * @apiSuccess (响应) {int64} ct 创建时间(时间戳:秒)
- * @apiSuccess (响应) {int64} mt 修改时间(时间戳:秒)
+ * @apiSuccess (授权信息) {string} token_id 授权id
+ * @apiSuccess (授权信息) {tkpb.Platform} platform 平台信息
+ * @apiSuccess (授权信息) {int64} et 失效时间(时间戳:秒)
+ * @apiSuccess (授权信息) {int64} ct 创建时间(时间戳:秒)
+ * @apiSuccess (授权信息) {int64} mt 修改时间(时间戳:秒)
  *
  */
 

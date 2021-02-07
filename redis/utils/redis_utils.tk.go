@@ -12,6 +12,11 @@ import (
 )
 
 // key
+const (
+	_defaultKeyPrefix = "srv"
+)
+
+// key
 var (
 	_client    *redis.Redis
 	_keyPrefix string
@@ -54,6 +59,9 @@ func formatSec(dur time.Duration) int64 {
 func KeyPrefix() string {
 	_keyOnce.Do(func() {
 		_keyPrefix = env.AppID
+		if _keyPrefix == "" {
+			_keyPrefix = _defaultKeyPrefix
+		}
 	})
 	return _keyPrefix
 }
