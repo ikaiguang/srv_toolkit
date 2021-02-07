@@ -36,7 +36,7 @@ func Register(cm map[Code]string) {
 	//		cm[c] = msg[c]
 	//	}
 	//}
-	_messages.Store(cm)
+	_messages.Store(m)
 }
 
 // Msg .
