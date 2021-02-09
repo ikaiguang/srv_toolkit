@@ -36,8 +36,8 @@ const (
 	JwtAckDeleted     Code = 10021 // 无效用户
 	JwtAckInvalid     Code = 10022 // 请先激活账户
 	JwtParamErr       Code = 10023 // JWT参数有误
-	JwtAudienceEmpty  Code = 10024 // 请填写JWT签发的目标收件人Audience
-	JwtIdEmpty        Code = 10025 // 请填写JWT签发的编号Id
+	JwtAudienceEmpty  Code = 10024 // 请填写签发的目标收件人JWT_Audience
+	JwtIdEmpty        Code = 10025 // 请填写签发的编号JWT_Id
 	JwtSigned         Code = 10026 // 您的账户已在其他设备登录
 	InvalidData       Code = 10027 // 无效的数据，请重试
 	InvalidDBData     Code = 10028 // 无效的数据库数据，请重试

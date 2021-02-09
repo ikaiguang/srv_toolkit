@@ -5,6 +5,7 @@ package tkredis
 import (
 	"context"
 	"github.com/go-redsync/redsync/v4"
+	tke "github.com/ikaiguang/srv_toolkit/error"
 	tkredigo "github.com/ikaiguang/srv_toolkit/redis/redigo"
 	"sync"
 	"time"
@@ -21,6 +22,34 @@ func NewLock(ctx context.Context, name string) (lock *DLock, isLockFailed bool, 
 func NewLockWithTries(ctx context.Context, name string, opt *DLockOption) (lock *DLock, isLockFailed bool, err error) {
 	lock = &DLock{tries: opt.Tries, tryDelay: opt.TryDelay}
 	isLockFailed, err = lock.Lock(ctx, name)
+	return
+}
+
+// GetLock .
+func GetLock(ctx context.Context, name string) (lock *DLock, err error) {
+	lock, isLockFail, err := NewLock(ctx, name)
+	if isLockFail {
+		err = tke.Newf(tke.TooManyRequests, err)
+		return
+	}
+	if err != nil {
+		err = tke.Newf(tke.Redis, err)
+		return
+	}
+	return
+}
+
+// GetLockWithTries .
+func GetLockWithTries(ctx context.Context, name string, opt *DLockOption) (lock *DLock, err error) {
+	lock, isLockFail, err := NewLockWithTries(ctx, name, opt)
+	if isLockFail {
+		err = tke.Newf(tke.TooManyRequests, err)
+		return
+	}
+	if err != nil {
+		err = tke.Newf(tke.Redis, err)
+		return
+	}
 	return
 }
 
@@ -55,7 +84,7 @@ type DLockOption struct {
 // lazySync
 func (s *DLock) lazySync() *redsync.Redsync {
 	_lockOnce.Do(func() {
-		_lockSync = redsync.New(tkredigo.NewPool(redisConn))
+		_lockSync = redsync.New(tkredigo.NewPool(Redis()))
 	})
 	return _lockSync
 }

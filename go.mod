@@ -3,6 +3,7 @@ module github.com/ikaiguang/srv_toolkit
 go 1.14
 
 require (
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/fastly/go-utils v0.0.0-20180712184237-d95a45783239 // indirect
 	github.com/go-kratos/kratos v0.6.0
 	github.com/go-redsync/redsync/v4 v4.0.4

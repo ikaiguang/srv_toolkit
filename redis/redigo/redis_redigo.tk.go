@@ -13,10 +13,15 @@ type pool struct {
 	delegate *redis.Redis
 }
 
+// Get .
 func (p *pool) Get(ctx context.Context) (redsyncredis.Conn, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	return &conn{delegate: p.delegate.Conn(ctx)}, nil
 }
 
+// NewPool .
 func NewPool(delegate *redis.Redis) redsyncredis.Pool {
 	return &pool{delegate: delegate}
 }

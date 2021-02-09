@@ -15,10 +15,6 @@ import (
 
 // const
 const (
-	_defaultLoginType    = tkjwtpb.JwtLoginLimitType_login_type_unlimited
-	_defaultPlatform     = tkpb.Platform_platform_mobile
-	_defaultActiveStatus = tkjwtpb.JwtActiveStatus_active_status_valid
-
 	_loginLockKeyPrefix  = "tk_jwt_login_lock:"
 	_loginCacheKeyPrefix = "tk_jwt_token:"
 	_loginCacheKeyUser   = "user"
@@ -26,6 +22,8 @@ const (
 
 // var
 var (
+	Handler = &jwtToken{}
+
 	// logger
 	logger tkapp.LoggerInterface = &tkapp.Log{}
 
@@ -54,7 +52,7 @@ type jwtToken struct{}
 // LoginParam .
 type LoginParam struct {
 	UserInfo  *tkjwtpb.JwtUserInfo
-	Claims    *jwt.StandardClaims // claims.Audience 用于redis缓存(必填)
+	Claims    *jwt.StandardClaims // 必填参数： Id, Audience
 	Platform  tkpb.Platform
 	LimitType tkjwtpb.JwtLoginLimitType
 }
@@ -78,13 +76,14 @@ func (s *jwtToken) Login(ctx context.Context, param *LoginParam) (token string, 
 	}
 
 	// 避免同时登录
-	lock, err := s.GetLock(ctx, param.Claims.Audience)
+	lock, err := tkredis.GetLock(ctx, s.LockKey(param.Claims.Audience))
 	if err != nil {
 		return
 	}
-	defer func() {
-		_, _ = lock.Unlock()
-	}()
+	_ = lock
+	//defer func() {
+	//	_, _ = lock.Unlock()
+	//}()
 
 	// 缓存
 	allCache, err := s.GetAllCache(ctx, param.Claims.Audience)
@@ -272,7 +271,7 @@ func (s *jwtToken) SaveCache(ctx context.Context, allCache *JwtCache) (err error
 
 	// auth
 	for key := range allCache.Tokens {
-		buf, err = proto.Marshal(allCache.User)
+		buf, err = proto.Marshal(allCache.Tokens[key])
 		if err != nil {
 			err = tke.Newf(tke.Err, err)
 			return err
@@ -348,20 +347,6 @@ func (s *jwtToken) GetAllCache(ctx context.Context, jwtAudience string) (res *Jw
 // @param @jwtAudience lock key
 func (s *jwtToken) LockKey(jwtAudience string) string {
 	return tkru.Key(_loginLockKeyPrefix + jwtAudience)
-}
-
-// GetLock .
-func (s *jwtToken) GetLock(ctx context.Context, jwtAudience string) (lock *tkredis.DLock, err error) {
-	lock, isLockFail, err := tkredis.NewLock(ctx, s.LockKey(jwtAudience))
-	if err != nil {
-		err = tke.Newf(tke.Redis, err)
-		return
-	}
-	if isLockFail {
-		err = tke.New(tke.TooManyRequests)
-		return
-	}
-	return
 }
 
 // =====================================================================================================================

@@ -10,6 +10,7 @@ import (
 	tkgrpc "github.com/ikaiguang/srv_toolkit/grpc"
 	tkhttp "github.com/ikaiguang/srv_toolkit/http"
 	tkinit "github.com/ikaiguang/srv_toolkit/initialize"
+	tkjwt "github.com/ikaiguang/srv_toolkit/jwt"
 	tklog "github.com/ikaiguang/srv_toolkit/log"
 	tkredis "github.com/ikaiguang/srv_toolkit/redis"
 	tkru "github.com/ikaiguang/srv_toolkit/redis/utils"
@@ -84,6 +85,7 @@ func Setup() {
 	// 初始化日志
 	tklog.Setup("log.toml", "Log")
 	tkapp.SetLogger(&tklog.AppLogger{})
+	tkjwt.SetLogger(&tklog.AppLogger{})
 
 	// 初始化redis
 	tkredis.Setup("redis.toml", "Client")
