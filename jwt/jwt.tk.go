@@ -80,10 +80,9 @@ func (s *jwtToken) Login(ctx context.Context, param *LoginParam) (token string, 
 	if err != nil {
 		return
 	}
-	_ = lock
-	//defer func() {
-	//	_, _ = lock.Unlock()
-	//}()
+	defer func() {
+		_, _ = lock.Unlock()
+	}()
 
 	// 缓存
 	allCache, err := s.GetAllCache(ctx, param.Claims.Audience)
@@ -97,15 +96,51 @@ func (s *jwtToken) Login(ctx context.Context, param *LoginParam) (token string, 
 	}
 
 	// 有缓存，检查限制
-	err = s.CheckLogin(ctx, param, allCache)
+	err = s.CanLogin(ctx, param, allCache)
 	if err != nil {
 		return
 	}
 	return s.login(ctx, param, allCache)
 }
 
-// CheckLogin .
-func (s *jwtToken) CheckLogin(ctx context.Context, param *LoginParam, allCache *JwtCache) (err error) {
+// login .
+func (s *jwtToken) login(ctx context.Context, param *LoginParam, allCache *JwtCache) (token string, err error) {
+	token, err = s.GenToken(param.Claims, param.UserInfo.TokenSecret)
+	if err != nil {
+		return
+	}
+
+	// 缓存
+	allCache.User = param.UserInfo
+	allCache.Tokens = map[string]*tkjwtpb.JwtAuthInfo{
+		param.Claims.Id: {
+			TokenId:  param.Claims.Id,
+			Platform: param.Platform,
+			Lt:       param.LimitType,
+			Et:       param.Claims.ExpiresAt,
+			Ct:       time.Now().Unix(),
+		},
+	}
+	err = s.SaveCache(ctx, allCache)
+	if err != nil {
+		return "", err
+	}
+	return
+}
+
+// GenToken 生产token
+func (s *jwtToken) GenToken(claims jwt.Claims, secret string) (tokenStr string, err error) {
+	tokenClaims := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenStr, err = tokenClaims.SignedString([]byte(secret))
+	if err != nil {
+		err = tke.Newf(tke.Err, err)
+		return
+	}
+	return
+}
+
+// CanLogin .
+func (s *jwtToken) CanLogin(ctx context.Context, param *LoginParam, allCache *JwtCache) (err error) {
 	// 删除过期的token
 	nowUnix := time.Now().Unix()
 	var delFields []string
@@ -116,7 +151,6 @@ func (s *jwtToken) CheckLogin(ctx context.Context, param *LoginParam, allCache *
 		// 删除过期的token
 		if allCache.Tokens[key].Et <= nowUnix {
 			delFields = append(delFields, key)
-			delete(allCache.Tokens, key)
 			continue
 		}
 		platformM[allCache.Tokens[key].Platform] = append(platformM[allCache.Tokens[key].Platform], allCache.Tokens[key])
@@ -148,43 +182,6 @@ func (s *jwtToken) CheckLogin(ctx context.Context, param *LoginParam, allCache *
 			err = tke.Newf(tke.Err, err)
 			return err
 		}
-	}
-	return
-}
-
-// login .
-func (s *jwtToken) login(ctx context.Context, param *LoginParam, allCache *JwtCache) (token string, err error) {
-	token, err = s.GenToken(param.Claims, param.UserInfo.TokenSecret)
-	if err != nil {
-		return
-	}
-
-	// 缓存
-	allCache.User = param.UserInfo
-	if allCache.Tokens == nil {
-		allCache.Tokens = make(map[string]*tkjwtpb.JwtAuthInfo)
-	}
-	allCache.Tokens[param.Claims.Id] = &tkjwtpb.JwtAuthInfo{
-		TokenId:  param.Claims.Id,
-		Platform: param.Platform,
-		Lt:       param.LimitType,
-		Et:       param.Claims.ExpiresAt,
-		Ct:       time.Now().Unix(),
-	}
-	err = s.SaveCache(ctx, allCache)
-	if err != nil {
-		return "", err
-	}
-	return
-}
-
-// GenToken 生产token
-func (s *jwtToken) GenToken(claims jwt.Claims, secret string) (tokenStr string, err error) {
-	tokenClaims := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenStr, err = tokenClaims.SignedString([]byte(secret))
-	if err != nil {
-		err = tke.Newf(tke.Err, err)
-		return
 	}
 	return
 }
