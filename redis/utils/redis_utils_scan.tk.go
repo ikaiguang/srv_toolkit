@@ -1,4 +1,4 @@
-package tkredisutils
+package tkru
 
 import "github.com/gomodule/redigo/redis"
 

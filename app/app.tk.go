@@ -20,7 +20,7 @@ var (
 	logger LoggerInterface = &Log{}
 )
 
-// SetLogger
+// SetLogger .
 func SetLogger(handler LoggerInterface) {
 	logger = handler
 }

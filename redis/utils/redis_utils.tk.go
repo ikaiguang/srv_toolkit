@@ -1,4 +1,4 @@
-package tkredisutils
+package tkru
 
 import (
 	"context"
@@ -23,8 +23,8 @@ var (
 	_keyOnce   sync.Once
 )
 
-// SetConn .
-func SetConn(pool *redis.Redis) {
+// Init .
+func Init(pool *redis.Redis) {
 	_client = pool
 }
 

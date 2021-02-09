@@ -11,53 +11,59 @@ import (
 )
 
 // NewLock .
-func NewLock(name string) (lock *DistributedLock, isLockFailed bool, err error) {
-	lock = new(DistributedLock)
-	isLockFailed, err = lock.Lock(context.Background(), name)
+func NewLock(ctx context.Context, name string) (lock *DLock, isLockFailed bool, err error) {
+	lock = &DLock{tries: 1}
+	isLockFailed, err = lock.Lock(ctx, name)
 	return
 }
 
-// NewLockContext .
-func NewLockContext(ctx context.Context, name string) (lock *DistributedLock, isLockFailed bool, err error) {
-	lock = new(DistributedLock)
+// NewLockWithTries .
+func NewLockWithTries(ctx context.Context, name string, opt *DLockOption) (lock *DLock, isLockFailed bool, err error) {
+	lock = &DLock{tries: opt.Tries, tryDelay: opt.TryDelay}
 	isLockFailed, err = lock.Lock(ctx, name)
 	return
 }
 
 // 锁信息
 const (
-	_lockExpire     = 8 * time.Second // 锁过期时间
-	_lockResetDelay = 3 * time.Second // 重置锁时间，防止锁自动过期
-	_lockTries      = 1               // 尝试次数
+	_lockExpire     = 8 * time.Second        // 锁过期时间
+	_lockResetDelay = 3 * time.Second        // 重置锁时间，防止锁自动过期
+	_lockTries      = 1                      // 尝试次数
+	_lockDelay      = 100 * time.Millisecond // 尝试间隔
 )
 
 // lock
 var (
 	_lockOnce sync.Once
 	_lockSync *redsync.Redsync
-	_lockOpts []redsync.Option
 )
 
-// DistributedLock redis 分布式锁
-type DistributedLock struct {
+// DLock redis 分布式锁
+type DLock struct {
+	tries     int
+	tryDelay  time.Duration
 	mutex     *redsync.Mutex // 锁
 	resetChan chan bool      // 信道
 }
 
+// DLockOption .
+type DLockOption struct {
+	Tries    int
+	TryDelay time.Duration
+}
+
 // lazySync
-func (s *DistributedLock) lazySync() (*redsync.Redsync, []redsync.Option) {
+func (s *DLock) lazySync() *redsync.Redsync {
 	_lockOnce.Do(func() {
-		_lockOpts = s.Options()
+		_lockSync = redsync.New(tkredigo.NewPool(redisConn))
 	})
-	_lockSync = redsync.New(tkredigo.NewPool(redisConn))
-	return _lockSync, _lockOpts
+	return _lockSync
 }
 
 // Lock 锁
-func (s *DistributedLock) Lock(ctx context.Context, name string) (isLockFailed bool, err error) {
+func (s *DLock) Lock(ctx context.Context, name string) (isLockFailed bool, err error) {
 	// mutex
-	lockSync, lockOpts := s.lazySync()
-	s.mutex = lockSync.NewMutex(name, lockOpts...)
+	s.mutex = s.lazySync().NewMutex(name, s.Options()...)
 	err = s.mutex.LockContext(ctx)
 	if err != nil {
 		isLockFailed = err == redsync.ErrFailed
@@ -72,7 +78,7 @@ func (s *DistributedLock) Lock(ctx context.Context, name string) (isLockFailed b
 }
 
 // Unlock 解锁
-func (s *DistributedLock) Unlock() (bool, error) {
+func (s *DLock) Unlock() (bool, error) {
 	if s.resetChan != nil {
 		s.resetChan <- true
 		close(s.resetChan)
@@ -81,16 +87,24 @@ func (s *DistributedLock) Unlock() (bool, error) {
 }
 
 // Options .
-func (s *DistributedLock) Options() (opts []redsync.Option) {
+func (s *DLock) Options() (opts []redsync.Option) {
+	if s.tries <= 1 {
+		s.tries = _lockTries
+	}
+	if s.tryDelay <= time.Millisecond {
+		s.tryDelay = _lockDelay
+	}
+
 	opts = []redsync.Option{
 		redsync.WithExpiry(_lockExpire),
-		redsync.WithTries(_lockTries),
+		redsync.WithTries(s.tries),
+		redsync.WithRetryDelay(s.tryDelay),
 	}
 	return
 }
 
 // resetExpire 重置锁时间，防止自动过期而解锁
-func (s *DistributedLock) resetExpire() {
+func (s *DLock) resetExpire() {
 	// 计时器
 	timer := time.NewTimer(_lockResetDelay)
 

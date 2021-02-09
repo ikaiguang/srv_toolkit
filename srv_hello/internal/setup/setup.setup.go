@@ -12,6 +12,7 @@ import (
 	tkinit "github.com/ikaiguang/srv_toolkit/initialize"
 	tklog "github.com/ikaiguang/srv_toolkit/log"
 	tkredis "github.com/ikaiguang/srv_toolkit/redis"
+	tkru "github.com/ikaiguang/srv_toolkit/redis/utils"
 	dbmr "github.com/ikaiguang/srv_toolkit/srv_hello/internal/migration"
 	models "github.com/ikaiguang/srv_toolkit/srv_hello/internal/model"
 	routes "github.com/ikaiguang/srv_toolkit/srv_hello/internal/route"
@@ -86,6 +87,7 @@ func Setup() {
 
 	// 初始化redis
 	tkredis.Setup("redis.toml", "Client")
+	tkru.Init(tkredis.Redis())
 	// 初始化memcached
 	//tkmc.Setup("memcached.toml", "Client")
 

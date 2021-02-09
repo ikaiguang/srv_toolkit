@@ -77,5 +77,10 @@ var msg = map[Code]string{
 	JwtAckDeleted:     "无效用户",
 	JwtAckInvalid:     "请先激活账户",
 	JwtParamErr:       "JWT参数有误",
-	JwtAudienceEmpty:  "请填写JWT签发的目标收件人",
+	JwtAudienceEmpty:  "请填写JWT签发的目标收件人Audience",
+	JwtIdEmpty:        "请填写JWT签发的编号Id",
+	JwtSigned:         "您的账户已在其他设备登录",
+	InvalidData:       "无效的数据，请重试",
+	InvalidDBData:     "无效的数据库数据",
+	InvalidRedisData:  "无效的缓存数据，请重试",
 }

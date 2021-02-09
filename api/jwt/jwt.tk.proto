@@ -9,28 +9,13 @@ import "github.com/ikaiguang/srv_toolkit/api/api.tk.proto";
 
 /**
  *
- * @apiDefine JwtAuthCache 授权缓存信息
- *
- * @apiSuccess (授权缓存信息) {JwtUserInfo} user_info 用户信息
- * @apiSuccess (授权缓存信息) {JwtAuthInfo-array} auth_infos 授权信息(数组)
- *
- */
-
-// JwtAuthCache cache
-message JwtAuthCache {
-  JwtUserInfo user_info = 1; // 用户信息
-  repeated JwtAuthInfo auth_infos = 2; // 授权信息(数组)
-}
-
-/**
- *
  * @apiDefine JwtAuthInfo 授权信息
  *
  * @apiSuccess (授权信息) {string} token_id 授权id
  * @apiSuccess (授权信息) {tkpb.Platform} platform 平台信息
+ * @apiSuccess (授权信息) {tkjwtpb.JwtLoginLimitType} lt 登录限制类型
  * @apiSuccess (授权信息) {int64} et 失效时间(时间戳:秒)
  * @apiSuccess (授权信息) {int64} ct 创建时间(时间戳:秒)
- * @apiSuccess (授权信息) {int64} mt 修改时间(时间戳:秒)
  *
  */
 
@@ -38,9 +23,9 @@ message JwtAuthCache {
 message JwtAuthInfo {
   string token_id = 1;        // 授权id
   tkpb.Platform platform = 2; // 平台信息
-  int64 et = 3;               // 失效时间(时间戳:秒)
-  int64 ct = 4;               // 创建时间(时间戳:秒)
-  int64 mt = 5;               // 修改时间(时间戳:秒)
+  JwtLoginLimitType lt = 3;   // 登录限制类型
+  int64 et = 4;               // 失效时间(时间戳:秒)
+  int64 ct = 5;               // 创建时间(时间戳:秒)
 }
 
 /**
@@ -83,10 +68,10 @@ enum JwtActiveStatus {
   active_status_invalid = 6; // 无效的(无效用户)
 }
 
-// JwtLoginType .
-enum JwtLoginType {
+// JwtLoginLimitType 登录限制类型
+enum JwtLoginLimitType {
   login_type_unknown = 0;      // 未知
-  login_type_only_one = 1;     // 同一账户仅允许登录一次(验证码...可强制登录)
-  login_type_platform_one = 2; // 同一账户每个平台都可登录一次(验证码...可强制登录)
-  login_type_multiple = 3;     // 无限制
+  login_type_unlimited = 1;    // 无限制
+  login_type_only_one = 2;     // 同一账户仅允许登录一次(验证码...可强制登录)
+  login_type_platform_one = 3; // 同一账户每个平台都可登录一次(验证码...可强制登录)
 }

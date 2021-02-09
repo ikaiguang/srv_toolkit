@@ -16,7 +16,7 @@ const (
 	Err               Code = 10001 // 系统错误
 	Panic             Code = 10002 // 系统错误:Panic
 	Db                Code = 10003 // 数据库错误
-	Redis             Code = 10004 // Redis错误
+	Redis             Code = 10004 // 缓存错误
 	Forbidden         Code = 10005 // 无权限操作资源，访问被拒绝
 	InvalidParameters Code = 10006 // 参数错误
 	BadRequest        Code = 10007 // 无效的请求
@@ -36,7 +36,12 @@ const (
 	JwtAckDeleted     Code = 10021 // 无效用户
 	JwtAckInvalid     Code = 10022 // 请先激活账户
 	JwtParamErr       Code = 10023 // JWT参数有误
-	JwtAudienceEmpty  Code = 10024 // 请填写JWT签发的目标收件人
+	JwtAudienceEmpty  Code = 10024 // 请填写JWT签发的目标收件人Audience
+	JwtIdEmpty        Code = 10025 // 请填写JWT签发的编号Id
+	JwtSigned         Code = 10026 // 您的账户已在其他设备登录
+	InvalidData       Code = 10027 // 无效的数据，请重试
+	InvalidDBData     Code = 10028 // 无效的数据库数据，请重试
+	InvalidRedisData  Code = 10029 // 无效的缓存数据，请重试
 )
 
 /*

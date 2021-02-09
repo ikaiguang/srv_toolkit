@@ -1,6 +1,9 @@
-package tkredisutils
+package tkru
 
-import "github.com/gomodule/redigo/redis"
+import (
+	"github.com/gomodule/redigo/redis"
+	"github.com/pkg/errors"
+)
 
 // IsRedisNil .
 func IsRedisNil(err error) bool {
@@ -70,6 +73,27 @@ func Int64s(reply interface{}, err error) ([]int64, error) {
 // Ints .
 func Ints(reply interface{}, err error) ([]int, error) {
 	return redis.Ints(reply, err)
+}
+
+// BytesMap .
+func BytesMap(result interface{}, err error) (map[string][]byte, error) {
+	values, err := redis.Values(result, err)
+	if err != nil {
+		return nil, err
+	}
+	if len(values)%2 != 0 {
+		return nil, errors.New("redigo: BytesMap expects even number of values result")
+	}
+	m := make(map[string][]byte, len(values)/2)
+	for i := 0; i < len(values); i += 2 {
+		key, okKey := values[i].([]byte)
+		value, okValue := values[i+1].([]byte)
+		if !okKey || !okValue {
+			return nil, errors.New("redigo: BytesMap key not a bulk string value")
+		}
+		m[string(key)] = value
+	}
+	return m, nil
 }
 
 // StringMap .
