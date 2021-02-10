@@ -4,11 +4,11 @@ import (
 	"github.com/go-kratos/kratos/pkg/log"
 	tk "github.com/ikaiguang/srv_toolkit/toolkit"
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
+	"github.com/mattn/go-colorable"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"io"
-	"os"
 	"path/filepath"
 	"time"
 )
@@ -110,10 +110,10 @@ func initProduction(logConf, section string) (err error) {
 	// std
 	if cfg.Stdout {
 		stdEncoderCfg := logEncoderCfg
-		stdEncoderCfg.EncodeLevel = zapcore.CapitalLevelEncoder
+		stdEncoderCfg.EncodeLevel = zapcore.CapitalColorLevelEncoder
 		stdEncoderCfg.EncodeCaller = zapcore.FullCallerEncoder
 		stdEncoder := zapcore.NewConsoleEncoder(stdEncoderCfg)
-		stdWriter := os.Stderr
+		stdWriter := colorable.NewColorableStderr()
 		cores = append(cores, zapcore.NewCore(stdEncoder, zapcore.AddSync(stdWriter), logLevel))
 	}
 
