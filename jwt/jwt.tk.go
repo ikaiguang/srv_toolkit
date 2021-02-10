@@ -150,6 +150,17 @@ func (s *jwtToken) Login(ctx context.Context, loginParam *LoginParam) (token str
 	return s.login(ctx, loginParam, allCache)
 }
 
+// Refresh .
+func (s *jwtToken) Refresh(ctx context.Context, claims *jwt.StandardClaims) (err error) {
+
+	return
+}
+
+// Logout .
+func (s *jwtToken) Logout(ctx context.Context, claims *jwt.StandardClaims) (err error) {
+	return s.DelTokenCache(ctx, claims.Audience, claims.Id)
+}
+
 // isValid .
 func (s *jwtToken) isValid(tokenCache *JwtCache, claims *jwt.StandardClaims) (err error) {
 	// 无缓存
@@ -324,6 +335,16 @@ func (s *jwtToken) CacheKey(jwtAudience string) string {
 // DelCache .
 func (s *jwtToken) DelCache(ctx context.Context, jwtAudience string) (err error) {
 	_, err = tkru.Del(ctx, s.CacheKey(jwtAudience))
+	if err != nil {
+		err = tke.Newf(tke.Redis, err)
+		return
+	}
+	return
+}
+
+// DelTokenCache .
+func (s *jwtToken) DelTokenCache(ctx context.Context, jwtAudience, tokenID string) (err error) {
+	_, err = tkru.HDel(ctx, s.CacheKey(jwtAudience), tokenID)
 	if err != nil {
 		err = tke.Newf(tke.Redis, err)
 		return
