@@ -102,7 +102,7 @@ func rebuildDBConn(cfg *Config) (db *gorm.DB, err error) {
 func newDB(cfg *Config) (db *gorm.DB, err error) {
 	// 连接
 	dbLogger := logger.New(
-		log.New(colorable.NewColorableStdout(), "\r\n", log.LstdFlags),
+		log.New(colorable.NewColorableStderr(), "\r\n", log.LstdFlags),
 		logger.Config{
 			SlowThreshold: 200 * time.Millisecond,
 			LogLevel:      logger.Info,
