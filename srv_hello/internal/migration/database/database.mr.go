@@ -4,12 +4,12 @@ import (
 	"github.com/go-kratos/kratos/pkg/conf/paladin"
 	tkdb "github.com/ikaiguang/srv_toolkit/db"
 	tk "github.com/ikaiguang/srv_toolkit/toolkit"
+	"github.com/mattn/go-colorable"
 	"github.com/pkg/errors"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 	"log"
-	"os"
 	"time"
 
 	mysqlDriver "github.com/go-sql-driver/mysql"
@@ -101,11 +101,14 @@ func rebuildDBConn(cfg *Config) (db *gorm.DB, err error) {
 // newDB .
 func newDB(cfg *Config) (db *gorm.DB, err error) {
 	// 连接
-	dbLogger := logger.New(log.New(os.Stdout, "\r\n", log.LstdFlags), logger.Config{
-		SlowThreshold: 200 * time.Millisecond,
-		LogLevel:      logger.Info,
-		Colorful:      true,
-	})
+	dbLogger := logger.New(
+		log.New(colorable.NewColorableStdout(), "\r\n", log.LstdFlags),
+		logger.Config{
+			SlowThreshold: 200 * time.Millisecond,
+			LogLevel:      logger.Info,
+			Colorful:      true,
+		},
+	)
 	//dbLogger.LogMode(logger.Info)
 	dbConf := &gorm.Config{
 		Logger: dbLogger,
