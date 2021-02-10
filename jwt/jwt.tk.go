@@ -10,6 +10,7 @@ import (
 	tke "github.com/ikaiguang/srv_toolkit/error"
 	tkredis "github.com/ikaiguang/srv_toolkit/redis"
 	tkru "github.com/ikaiguang/srv_toolkit/redis/utils"
+	"github.com/pkg/errors"
 	"time"
 )
 
@@ -57,6 +58,52 @@ type LoginParam struct {
 	LimitType tkjwtpb.JwtLoginLimitType
 }
 
+// IsValid .
+// parse err ==> status, ok := tke.FromError(err)
+func (s *jwtToken) IsValid(ctx context.Context, tokenStr string) (loginParam *LoginParam, err error) {
+	if tokenStr == "" {
+		err = tke.New(tke.NoneToken)
+		return
+	}
+
+	// token
+	var tokenCache *JwtCache
+	claims := &jwt.StandardClaims{}
+	token, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (secret interface{}, err error) {
+		// 缓存
+		tokenCache, err = s.GetTokenCache(ctx, claims)
+		if err != nil {
+			return secret, err
+		}
+		// 是否有效
+		// err = &jwt.ValidationError{Inner: err, Errors: jwt.ValidationErrorUnverifiable}
+		err = s.isValid(tokenCache, claims)
+		if err != nil {
+			return secret, err
+		}
+		// 密码
+		secret = []byte(tokenCache.User.TokenSecret)
+		return secret, err
+	})
+	if err != nil {
+		//jwtE, ok := err.(*jwt.ValidationError)
+		// jwtE.Errors == jwt.ValidationErrorUnverifiable
+		err = tke.Newf(tke.InvalidToken, err)
+		return
+	}
+	if !token.Valid {
+		err = tke.New(tke.TokenInvalid, errors.New("token is invalid"))
+		return
+	}
+	loginParam = &LoginParam{
+		UserInfo:  tokenCache.User,
+		Claims:    claims,
+		Platform:  tokenCache.Tokens[claims.Id].Platform,
+		LimitType: tokenCache.Tokens[claims.Id].Lt,
+	}
+	return
+}
+
 // Login .
 func (s *jwtToken) Login(ctx context.Context, loginParam *LoginParam) (token string, err error) {
 	//claims := &jwt.StandardClaims{
@@ -101,6 +148,25 @@ func (s *jwtToken) Login(ctx context.Context, loginParam *LoginParam) (token str
 		return
 	}
 	return s.login(ctx, loginParam, allCache)
+}
+
+// isValid .
+func (s *jwtToken) isValid(tokenCache *JwtCache, claims *jwt.StandardClaims) (err error) {
+	// 无缓存
+	if !tokenCache.HasCache {
+		err = tke.Newf(tke.InvalidToken, errors.New("cannot find token cache"))
+		return
+	}
+	if claimsCache, ok := tokenCache.Tokens[claims.Id]; !ok || claims.Id != claimsCache.TokenId {
+		err = tke.Newf(tke.InvalidToken, errors.New("token payload is incorrect"))
+		return
+	}
+	// 有效的用户？
+	err = s.validateUserStatus(tokenCache.User.UserStatus)
+	if err != nil {
+		return
+	}
+	return
 }
 
 // login .
@@ -199,16 +265,9 @@ func (s *jwtToken) validateParam(param *LoginParam) (err error) {
 	}
 
 	// 用户状态
-	switch param.UserInfo.UserStatus {
-	//case tkjwtpb.JwtActiveStatus_active_status_valid, tkjwtpb.JwtActiveStatus_active_status_temp, tkjwtpb.JwtActiveStatus_active_status_access:
-	//	// 有效的
-	case tkjwtpb.JwtActiveStatus_active_status_deny, tkjwtpb.JwtActiveStatus_active_status_deleted, tkjwtpb.JwtActiveStatus_active_status_invalid:
-		// 无效的
-		err = s.activeStatusError(param.UserInfo.UserStatus)
+	err = s.validateUserStatus(param.UserInfo.UserStatus)
+	if err != nil {
 		return
-	default:
-		// 默认未有效用户
-		//param.UserInfo.UserStatus = tkjwtpb.JwtActiveStatus_active_status_valid
 	}
 
 	// 平台
@@ -226,6 +285,23 @@ func (s *jwtToken) validateParam(param *LoginParam) (err error) {
 	//default:
 	//	param.LimitType = tkjwtpb.JwtLoginLimitType_login_type_unlimited
 	//}
+	return
+}
+
+// validateUserStatus 用户状态
+func (s *jwtToken) validateUserStatus(userStatus tkjwtpb.JwtActiveStatus) (err error) {
+	// 用户状态
+	switch userStatus {
+	//case tkjwtpb.JwtActiveStatus_active_status_valid, tkjwtpb.JwtActiveStatus_active_status_temp, tkjwtpb.JwtActiveStatus_active_status_access:
+	//	// 有效的
+	case tkjwtpb.JwtActiveStatus_active_status_deny, tkjwtpb.JwtActiveStatus_active_status_deleted, tkjwtpb.JwtActiveStatus_active_status_invalid:
+		// 无效的
+		err = s.activeStatusError(userStatus)
+		return
+	default:
+		// 默认未有效用户
+		//param.UserInfo.UserStatus = tkjwtpb.JwtActiveStatus_active_status_valid
+	}
 	return
 }
 
@@ -336,6 +412,53 @@ func (s *jwtToken) GetAllCache(ctx context.Context, jwtAudience string) (res *Jw
 			return res, err
 		}
 		res.Tokens[key] = authInfo
+	}
+	return
+}
+
+// GetTokenCache .
+func (s *jwtToken) GetTokenCache(ctx context.Context, claims *jwt.StandardClaims) (res *JwtCache, err error) {
+	res = &JwtCache{Key: s.CacheKey(claims.Audience)}
+
+	// get
+	bufSlice, err := tkru.ByteSlices(tkru.HMGet(ctx, res.Key, _loginCacheKeyUser, claims.Id))
+	if err != nil {
+		if tkru.IsRedisNil(err) {
+			err = nil
+		} else {
+			err = tke.Newf(tke.Redis, err)
+		}
+		return
+	}
+	if len(bufSlice) != 2 {
+		err = tke.New(tke.InvalidRedisData)
+	}
+
+	// cache
+	res.HasCache = len(bufSlice[1]) > 0
+	if !res.HasCache {
+		return
+	}
+	res.User = &tkjwtpb.JwtUserInfo{}
+	res.Tokens = make(map[string]*tkjwtpb.JwtAuthInfo)
+
+	// user
+	if len(bufSlice[0]) > 0 {
+		err = proto.Unmarshal(bufSlice[0], res.User)
+		if err != nil {
+			err = tke.Newf(tke.InvalidRedisData, err)
+			return res, err
+		}
+	}
+	// token
+	if len(bufSlice[1]) > 0 {
+		authInfo := &tkjwtpb.JwtAuthInfo{}
+		err = proto.Unmarshal(bufSlice[1], authInfo)
+		if err != nil {
+			err = tke.Newf(tke.InvalidRedisData, err)
+			return res, err
+		}
+		res.Tokens[claims.Id] = authInfo
 	}
 	return
 }

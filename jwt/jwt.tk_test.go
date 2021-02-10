@@ -29,19 +29,8 @@ func initSetup() {
 	})
 }
 
-func TestJwtToken_Login(t *testing.T) {
-	initSetup()
-
-	var (
-		token string
-		err   error
-	)
-
-	// param
-	// token 有效期 10s，所以：执行一次完整的测试需要间隔 10s
-	tokenExpire := 10 * time.Second
-	ctx := context.Background()
-	loginParam := &LoginParam{
+func testLoginParam(tokenExpire time.Duration) (loginParam *LoginParam) {
+	loginParam = &LoginParam{
 		UserInfo: &tkjwtpb.JwtUserInfo{
 			Id: 1, Uuid: "UUID",
 		},
@@ -54,6 +43,22 @@ func TestJwtToken_Login(t *testing.T) {
 		Platform:  tkpb.Platform_platform_android,
 		LimitType: tkjwtpb.JwtLoginLimitType_login_type_unlimited,
 	}
+	return
+}
+
+func TestJwtToken_Login(t *testing.T) {
+	initSetup()
+
+	var (
+		token string
+		err   error
+	)
+
+	// param
+	// token 有效期 10s，所以：执行一次完整的测试需要间隔 10s
+	tokenExpire := 10 * time.Second
+	ctx := context.Background()
+	loginParam := testLoginParam(tokenExpire)
 
 	data := []struct {
 		canLogin bool
@@ -96,4 +101,29 @@ func TestJwtToken_Login(t *testing.T) {
 	for i := range uidS {
 		assert.Contains(t, allCache.Tokens, uidS[i])
 	}
+}
+
+func TestJwtToken_IsValid(t *testing.T) {
+	initSetup()
+
+	var (
+		token string
+		err   error
+	)
+
+	// param
+	tokenExpire := 10 * time.Second
+	ctx := context.Background()
+	loginParam := testLoginParam(tokenExpire)
+
+	token, err = Handler.Login(ctx, loginParam)
+	assert.Nil(t, err)
+	assert.NotEmpty(t, token)
+
+	validRes, err := Handler.IsValid(ctx, token)
+	assert.Nil(t, err)
+	assert.NotNil(t, validRes)
+	assert.Equal(t, loginParam.UserInfo.Id, validRes.UserInfo.Id)
+	assert.Equal(t, loginParam.UserInfo.Uuid, validRes.UserInfo.Uuid)
+	assert.Equal(t, loginParam.Claims.Id, validRes.Claims.Id)
 }
