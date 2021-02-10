@@ -1,0 +1,14 @@
+[Log]
+
+stdout = true
+dir = ""
+maxLogFile = 0
+rotateSize = 52428800 # 50<<20 = 50M
+# 日志级别：DEBUG:0 INFO:1 WARN:2 ERROR:3 FATAL:4
+v = 1
+# see log.SetFormat
+logFormat = ""
+# ext : text/json
+logFilename = "srv_hello"
+logShortCaller = true # caller
+logFormatter = "text"

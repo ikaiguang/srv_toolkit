@@ -1,0 +1,26 @@
+[Client]
+
+#addr = "127.0.0.1:3306"
+#readDSN = ["{user}:{password}@tcp(127.0.0.2:3306)/{database}?timeout=1s&readTimeout=1s&writeTimeout=1s&parseTime=true&loc=Local&charset=utf8mb4,utf8", "{user}:{password}@tcp(127.0.0.3:3306)/{database}?timeout=1s&readTimeout=1s&writeTimeout=1s&parseTime=true&loc=Local&charset=utf8,utf8mb4"]
+dsn = "root:Mysql.123456@tcp(127.0.0.1:3306)/srv_hello?timeout=1s&readTimeout=1s&writeTimeout=1s&parseTime=true&loc=Local&charset=utf8mb4,utf8"
+active = 0
+idle = 10
+idleTimeout = "2h"
+queryTimeout = "200ms"
+execTimeout = "300ms"
+tranTimeout = "500ms"
+tablePrefix = "srv_"
+
+[Migration]
+
+createDb = true
+databaseName = "srv_hello"
+# dsn 无需配置数据库名
+dsn = "root:Mysql.123456@tcp(127.0.0.1:3306)/?timeout=1s&readTimeout=1s&writeTimeout=1s&parseTime=true&loc=Local&charset=utf8mb4,utf8"
+active = 20
+idle = 10
+idleTimeout = "1h"
+queryTimeout = "200ms"
+execTimeout = "300ms"
+tranTimeout = "500ms"
+tablePrefix = "srv_"

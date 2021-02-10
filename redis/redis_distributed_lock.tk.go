@@ -101,18 +101,18 @@ func (s *DLock) Lock(ctx context.Context, name string) (isLockFailed bool, err e
 
 	// 续期锁，防止锁自动过期
 	s.resetChan = make(chan bool)
-	go s.resetExpire()
+	go s.resetExpire(ctx)
 
 	return
 }
 
 // Unlock 解锁
-func (s *DLock) Unlock() (bool, error) {
+func (s *DLock) Unlock(ctx context.Context) (bool, error) {
 	if s.resetChan != nil {
 		s.resetChan <- true
 		close(s.resetChan)
 	}
-	return s.mutex.Unlock()
+	return s.mutex.UnlockContext(ctx)
 }
 
 // Options .
@@ -133,7 +133,7 @@ func (s *DLock) Options() (opts []redsync.Option) {
 }
 
 // resetExpire 重置锁时间，防止自动过期而解锁
-func (s *DLock) resetExpire() {
+func (s *DLock) resetExpire(ctx context.Context) {
 	// 计时器
 	timer := time.NewTimer(_lockResetDelay)
 
@@ -142,7 +142,7 @@ func (s *DLock) resetExpire() {
 		// 结束计时
 		timer.Stop()
 		// 续期
-		if ok, err := s.mutex.Extend(); err != nil || !ok {
+		if ok, err := s.mutex.ExtendContext(ctx); err != nil || !ok {
 			// 调试
 			//fmt.Println("redis mutex 续期失败")
 			return
@@ -150,7 +150,7 @@ func (s *DLock) resetExpire() {
 		// 调试
 		//fmt.Println("redis mutex 续期成功")
 		// 再次续期
-		s.resetExpire()
+		s.resetExpire(ctx)
 	case <-s.resetChan: // 停止
 		timer.Stop()
 		// 调试

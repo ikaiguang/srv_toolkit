@@ -58,7 +58,7 @@ type LoginParam struct {
 }
 
 // Login .
-func (s *jwtToken) Login(ctx context.Context, param *LoginParam) (token string, err error) {
+func (s *jwtToken) Login(ctx context.Context, loginParam *LoginParam) (token string, err error) {
 	//claims := &jwt.StandardClaims{
 	//	Audience:  "Audience", // aud 目标收件人(签发给谁)
 	//	ExpiresAt: 0,          // exp 过期时间(有效期时间 exp)
@@ -70,37 +70,37 @@ func (s *jwtToken) Login(ctx context.Context, param *LoginParam) (token string, 
 	//}
 
 	// 验证参数
-	err = s.validateParam(param)
+	err = s.validateParam(loginParam)
 	if err != nil {
 		return
 	}
 
 	// 避免同时登录
-	lock, err := tkredis.GetLock(ctx, s.LockKey(param.Claims.Audience))
+	lock, err := tkredis.GetLock(ctx, s.LockKey(loginParam.Claims.Audience))
 	if err != nil {
 		return
 	}
 	defer func() {
-		_, _ = lock.Unlock()
+		_, _ = lock.Unlock(ctx)
 	}()
 
 	// 缓存
-	allCache, err := s.GetAllCache(ctx, param.Claims.Audience)
+	allCache, err := s.GetAllCache(ctx, loginParam.Claims.Audience)
 	if err != nil {
 		return
 	}
 
 	// 没有缓存，直接登录
 	if !allCache.HasCache {
-		return s.login(ctx, param, allCache)
+		return s.login(ctx, loginParam, allCache)
 	}
 
 	// 有缓存，检查限制
-	err = s.CanLogin(ctx, param, allCache)
+	err = s.CanLogin(ctx, loginParam, allCache)
 	if err != nil {
 		return
 	}
-	return s.login(ctx, param, allCache)
+	return s.login(ctx, loginParam, allCache)
 }
 
 // login .
