@@ -127,3 +127,67 @@ func TestJwtToken_IsValid(t *testing.T) {
 	assert.Equal(t, loginParam.UserInfo.Uuid, validRes.UserInfo.Uuid)
 	assert.Equal(t, loginParam.Claims.Id, validRes.Claims.Id)
 }
+
+func TestJwtToken_Refresh(t *testing.T) {
+	initSetup()
+
+	var (
+		token string
+		err   error
+	)
+
+	// param
+	tokenExpire := 10 * time.Second
+	ctx := context.Background()
+	loginParam := testLoginParam(tokenExpire)
+
+	token, err = Handler.Login(ctx, loginParam)
+	assert.Nil(t, err)
+	assert.NotEmpty(t, token)
+
+	validRes, err := Handler.IsValid(ctx, token)
+	assert.Nil(t, err)
+	assert.NotNil(t, validRes)
+	assert.Equal(t, loginParam.UserInfo.Id, validRes.UserInfo.Id)
+	assert.Equal(t, loginParam.UserInfo.Uuid, validRes.UserInfo.Uuid)
+	assert.Equal(t, loginParam.Claims.Id, validRes.Claims.Id)
+
+	// reset expire time
+	validRes.Claims.ExpiresAt = time.Now().Add(tokenExpire + time.Second).Unix()
+	newToken, err := Handler.Refresh(ctx, validRes)
+	assert.Nil(t, err)
+	assert.NotEmpty(t, token)
+	assert.NotEqual(t, token, newToken)
+
+	validRes, err = Handler.IsValid(ctx, newToken)
+	assert.Nil(t, err)
+	assert.NotNil(t, validRes)
+	assert.Equal(t, loginParam.UserInfo.Id, validRes.UserInfo.Id)
+	assert.Equal(t, loginParam.UserInfo.Uuid, validRes.UserInfo.Uuid)
+	assert.Equal(t, loginParam.Claims.Id, validRes.Claims.Id)
+}
+
+func TestJwtToken_Logout(t *testing.T) {
+	initSetup()
+
+	var (
+		token string
+		err   error
+	)
+
+	// param
+	tokenExpire := 10 * time.Second
+	ctx := context.Background()
+	loginParam := testLoginParam(tokenExpire)
+
+	token, err = Handler.Login(ctx, loginParam)
+	assert.Nil(t, err)
+	assert.NotEmpty(t, token)
+
+	err = Handler.Logout(ctx, loginParam.Claims)
+	assert.Nil(t, err)
+
+	tokenCache, err := Handler.GetTokenCache(ctx, loginParam.Claims)
+	assert.Nil(t, err)
+	assert.False(t, tokenCache.HasCache)
+}

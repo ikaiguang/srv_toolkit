@@ -16,8 +16,8 @@ import (
 
 // const
 const (
-	_loginLockKeyPrefix  = "tk_jwt_login_lock:"
-	_loginCacheKeyPrefix = "tk_jwt_token:"
+	_loginLockKeyPrefix  = "tk_login_lock:"
+	_loginCacheKeyPrefix = "tk_login_token:"
 	_loginCacheKeyUser   = "user"
 )
 
@@ -30,6 +30,9 @@ var (
 
 	// token 过期时间
 	_loginCacheExpire = time.Hour * 2
+
+	// cache
+	useSrvCachePrefix = false
 )
 
 // SetLogger .
@@ -47,6 +50,11 @@ func GetExpire() time.Duration {
 	return _loginCacheExpire
 }
 
+// UseSrvCachePrefix return key : tkru.Key(key)
+func UseSrvCachePrefix() {
+	useSrvCachePrefix = true
+}
+
 // jwtToken .
 type jwtToken struct{}
 
@@ -56,6 +64,52 @@ type LoginParam struct {
 	Claims    *jwt.StandardClaims // 必填参数： Id, Audience
 	Platform  tkpb.Platform
 	LimitType tkjwtpb.JwtLoginLimitType
+}
+
+// Login .
+func (s *jwtToken) Login(ctx context.Context, loginParam *LoginParam) (token string, err error) {
+	//claims := &jwt.StandardClaims{
+	//	Audience:  "Audience", // aud 目标收件人(签发给谁)
+	//	ExpiresAt: 0,          // exp 过期时间(有效期时间 exp)
+	//	Id:        "Id",       // jti 编号
+	//	IssuedAt:  0,          // iat 签发时间
+	//	Issuer:    "Issuer",   // iss 签发者
+	//	NotBefore: 0,          // nbf 生效时间(nbf 时间后生效)
+	//	Subject:   "Subject",  // sub 主题
+	//}
+
+	// 验证参数
+	err = s.validateParam(loginParam)
+	if err != nil {
+		return
+	}
+
+	// 避免同时登录
+	lock, err := tkredis.GetLock(ctx, s.LockKey(loginParam.Claims.Audience))
+	if err != nil {
+		return
+	}
+	defer func() {
+		_, _ = lock.Unlock(ctx)
+	}()
+
+	// 缓存
+	allCache, err := s.GetAllCache(ctx, loginParam.Claims.Audience)
+	if err != nil {
+		return
+	}
+
+	// 没有缓存，直接登录
+	if !allCache.HasCache {
+		return s.login(ctx, loginParam)
+	}
+
+	// 有缓存，检查限制
+	err = s.CanLogin(ctx, loginParam, allCache)
+	if err != nil {
+		return
+	}
+	return s.login(ctx, loginParam)
 }
 
 // IsValid .
@@ -104,56 +158,11 @@ func (s *jwtToken) IsValid(ctx context.Context, tokenStr string) (loginParam *Lo
 	return
 }
 
-// Login .
-func (s *jwtToken) Login(ctx context.Context, loginParam *LoginParam) (token string, err error) {
-	//claims := &jwt.StandardClaims{
-	//	Audience:  "Audience", // aud 目标收件人(签发给谁)
-	//	ExpiresAt: 0,          // exp 过期时间(有效期时间 exp)
-	//	Id:        "Id",       // jti 编号
-	//	IssuedAt:  0,          // iat 签发时间
-	//	Issuer:    "Issuer",   // iss 签发者
-	//	NotBefore: 0,          // nbf 生效时间(nbf 时间后生效)
-	//	Subject:   "Subject",  // sub 主题
-	//}
-
-	// 验证参数
-	err = s.validateParam(loginParam)
-	if err != nil {
-		return
-	}
-
-	// 避免同时登录
-	lock, err := tkredis.GetLock(ctx, s.LockKey(loginParam.Claims.Audience))
-	if err != nil {
-		return
-	}
-	defer func() {
-		_, _ = lock.Unlock(ctx)
-	}()
-
-	// 缓存
-	allCache, err := s.GetAllCache(ctx, loginParam.Claims.Audience)
-	if err != nil {
-		return
-	}
-
-	// 没有缓存，直接登录
-	if !allCache.HasCache {
-		return s.login(ctx, loginParam, allCache)
-	}
-
-	// 有缓存，检查限制
-	err = s.CanLogin(ctx, loginParam, allCache)
-	if err != nil {
-		return
-	}
-	return s.login(ctx, loginParam, allCache)
-}
-
 // Refresh .
-func (s *jwtToken) Refresh(ctx context.Context, claims *jwt.StandardClaims) (err error) {
-
-	return
+// @param loginParam 验证后响应的 loginParam
+// 请手动更新 claims 中的 ExpiresAt 的值
+func (s *jwtToken) Refresh(ctx context.Context, loginParam *LoginParam) (token string, err error) {
+	return s.login(ctx, loginParam)
 }
 
 // Logout .
@@ -181,21 +190,25 @@ func (s *jwtToken) isValid(tokenCache *JwtCache, claims *jwt.StandardClaims) (er
 }
 
 // login .
-func (s *jwtToken) login(ctx context.Context, param *LoginParam, allCache *JwtCache) (token string, err error) {
-	token, err = s.GenToken(param.Claims, param.UserInfo.TokenSecret)
+func (s *jwtToken) login(ctx context.Context, loginParam *LoginParam) (token string, err error) {
+	token, err = s.GenToken(loginParam.Claims, loginParam.UserInfo.TokenSecret)
 	if err != nil {
 		return
 	}
 
 	// 缓存
-	allCache.User = param.UserInfo
-	allCache.Tokens = map[string]*tkjwtpb.JwtAuthInfo{
-		param.Claims.Id: {
-			TokenId:  param.Claims.Id,
-			Platform: param.Platform,
-			Lt:       param.LimitType,
-			Et:       param.Claims.ExpiresAt,
-			Ct:       time.Now().Unix(),
+	allCache := &JwtCache{
+		Key:      s.CacheKey(loginParam.Claims.Audience),
+		User:     loginParam.UserInfo,
+		HasCache: true,
+		Tokens: map[string]*tkjwtpb.JwtAuthInfo{
+			loginParam.Claims.Id: {
+				TokenId:  loginParam.Claims.Id,
+				Platform: loginParam.Platform,
+				Lt:       loginParam.LimitType,
+				Et:       loginParam.Claims.ExpiresAt,
+				Ct:       time.Now().Unix(),
+			},
 		},
 	}
 	err = s.SaveCache(ctx, allCache)
@@ -328,8 +341,12 @@ type JwtCache struct {
 
 // CacheKey .
 // @param @jwtAudience cache key
-func (s *jwtToken) CacheKey(jwtAudience string) string {
-	return tkru.Key(_loginCacheKeyPrefix + jwtAudience)
+func (s *jwtToken) CacheKey(jwtAudience string) (key string) {
+	key = _loginCacheKeyPrefix + jwtAudience
+	if useSrvCachePrefix {
+		key = tkru.Key(key)
+	}
+	return
 }
 
 // DelCache .
