@@ -55,6 +55,31 @@ func UseSrvCachePrefix() {
 	useSrvCachePrefix = true
 }
 
+// DefaultClaims .
+func DefaultClaims() *jwt.StandardClaims {
+	now := time.Now()
+
+	return &jwt.StandardClaims{
+		Audience:  "srv_tk",                     // aud 目标收件人(签发给谁)
+		ExpiresAt: now.Add(GetExpire()).Unix(),  // exp 过期时间(有效期时间 exp)
+		Id:        now.Format(time.RFC3339Nano), // jti 编号
+		IssuedAt:  now.Unix(),                   // iat 签发时间
+		Issuer:    "srv_tk",                     // iss 签发者
+		NotBefore: now.Unix(),                   // nbf 生效时间(nbf 时间后生效)
+		Subject:   "srv_tk",                     // sub 主题
+	}
+}
+
+// DefaultLoginParam .
+func DefaultLoginParam() *LoginParam {
+	return &LoginParam{
+		UserInfo:  nil,
+		Claims:    DefaultClaims(),
+		Platform:  tkpb.Platform_platform_unknown,
+		LimitType: tkjwtpb.JwtLoginLimitType_login_type_unlimited,
+	}
+}
+
 // jwtToken .
 type jwtToken struct{}
 
@@ -68,16 +93,6 @@ type LoginParam struct {
 
 // Login .
 func (s *jwtToken) Login(ctx context.Context, loginParam *LoginParam) (token string, err error) {
-	//claims := &jwt.StandardClaims{
-	//	Audience:  "Audience", // aud 目标收件人(签发给谁)
-	//	ExpiresAt: 0,          // exp 过期时间(有效期时间 exp)
-	//	Id:        "Id",       // jti 编号
-	//	IssuedAt:  0,          // iat 签发时间
-	//	Issuer:    "Issuer",   // iss 签发者
-	//	NotBefore: 0,          // nbf 生效时间(nbf 时间后生效)
-	//	Subject:   "Subject",  // sub 主题
-	//}
-
 	// 验证参数
 	err = s.validateParam(loginParam)
 	if err != nil {
