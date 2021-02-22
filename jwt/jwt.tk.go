@@ -55,6 +55,22 @@ func UseSrvCachePrefix() {
 	useSrvCachePrefix = true
 }
 
+// NewClaims .
+// @param Audience user_id / user_uuid / ...
+func NewClaims(audience string) *jwt.StandardClaims {
+	now := time.Now()
+
+	return &jwt.StandardClaims{
+		Audience:  audience,                     // aud 目标收件人(签发给谁)
+		ExpiresAt: now.Add(GetExpire()).Unix(),  // exp 过期时间(有效期时间 exp)
+		Id:        now.Format(time.RFC3339Nano), // jti 编号
+		IssuedAt:  now.Unix(),                   // iat 签发时间
+		Issuer:    "srv_tk",                     // iss 签发者
+		NotBefore: now.Unix(),                   // nbf 生效时间(nbf 时间后生效)
+		Subject:   "srv_auth",                   // sub 主题
+	}
+}
+
 // DefaultClaims .
 func DefaultClaims() *jwt.StandardClaims {
 	now := time.Now()
@@ -66,7 +82,7 @@ func DefaultClaims() *jwt.StandardClaims {
 		IssuedAt:  now.Unix(),                   // iat 签发时间
 		Issuer:    "srv_tk",                     // iss 签发者
 		NotBefore: now.Unix(),                   // nbf 生效时间(nbf 时间后生效)
-		Subject:   "srv_tk",                     // sub 主题
+		Subject:   "srv_auth",                   // sub 主题
 	}
 }
 
@@ -79,6 +95,8 @@ func DefaultLoginParam() *LoginParam {
 		LimitType: tkjwtpb.JwtLoginLimitType_login_type_unlimited,
 	}
 }
+
+// ==================================================================================================================
 
 // jwtToken .
 type jwtToken struct{}
@@ -127,9 +145,9 @@ func (s *jwtToken) Login(ctx context.Context, loginParam *LoginParam) (token str
 	return s.login(ctx, loginParam)
 }
 
-// IsValid .
+// Validator .
 // parse err ==> status, ok := tke.FromError(err)
-func (s *jwtToken) IsValid(ctx context.Context, tokenStr string) (loginParam *LoginParam, err error) {
+func (s *jwtToken) Validator(ctx context.Context, tokenStr string) (loginParam *LoginParam, err error) {
 	if tokenStr == "" {
 		err = tke.New(tke.NoneToken)
 		return
@@ -344,7 +362,7 @@ func (s *jwtToken) validateUserStatus(userStatus tkjwtpb.JwtActiveStatus) (err e
 	return
 }
 
-// =====================================================================================================================
+// ==================================================================================================================
 
 // JwtCache .
 type JwtCache struct {
@@ -382,6 +400,18 @@ func (s *jwtToken) DelTokenCache(ctx context.Context, jwtAudience, tokenID strin
 		return
 	}
 	return
+}
+
+// UpdateUserCache .
+func (s *jwtToken) UpdateUserCache(ctx context.Context, jwtAudience string, userInfo *tkjwtpb.JwtUserInfo) (err error) {
+	allCache := &JwtCache{
+		Key:      s.CacheKey(jwtAudience),
+		HasCache: false,
+		User:     userInfo,
+		Tokens:   map[string]*tkjwtpb.JwtAuthInfo{},
+	}
+
+	return s.SaveCache(ctx, allCache)
 }
 
 // SaveCache .
@@ -516,13 +546,15 @@ func (s *jwtToken) GetTokenCache(ctx context.Context, claims *jwt.StandardClaims
 	return
 }
 
+// ==================================================================================================================
+
 // LockKey .
 // @param @jwtAudience lock key
 func (s *jwtToken) LockKey(jwtAudience string) string {
 	return tkru.Key(_loginLockKeyPrefix + jwtAudience)
 }
 
-// =====================================================================================================================
+// ==================================================================================================================
 
 // activeStatusError .
 func (s *jwtToken) activeStatusError(status tkjwtpb.JwtActiveStatus) error {

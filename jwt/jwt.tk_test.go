@@ -103,7 +103,7 @@ func TestJwtToken_Login(t *testing.T) {
 	}
 }
 
-func TestJwtToken_IsValid(t *testing.T) {
+func TestJwtToken_Validator(t *testing.T) {
 	initSetup()
 
 	var (
@@ -120,7 +120,7 @@ func TestJwtToken_IsValid(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotEmpty(t, token)
 
-	validRes, err := Handler.IsValid(ctx, token)
+	validRes, err := Handler.Validator(ctx, token)
 	assert.Nil(t, err)
 	assert.NotNil(t, validRes)
 	assert.Equal(t, loginParam.UserInfo.Id, validRes.UserInfo.Id)
@@ -145,7 +145,7 @@ func TestJwtToken_Refresh(t *testing.T) {
 	assert.Nil(t, err)
 	assert.NotEmpty(t, token)
 
-	validRes, err := Handler.IsValid(ctx, token)
+	validRes, err := Handler.Validator(ctx, token)
 	assert.Nil(t, err)
 	assert.NotNil(t, validRes)
 	assert.Equal(t, loginParam.UserInfo.Id, validRes.UserInfo.Id)
@@ -159,7 +159,7 @@ func TestJwtToken_Refresh(t *testing.T) {
 	assert.NotEmpty(t, token)
 	assert.NotEqual(t, token, newToken)
 
-	validRes, err = Handler.IsValid(ctx, newToken)
+	validRes, err = Handler.Validator(ctx, newToken)
 	assert.Nil(t, err)
 	assert.NotNil(t, validRes)
 	assert.Equal(t, loginParam.UserInfo.Id, validRes.UserInfo.Id)
