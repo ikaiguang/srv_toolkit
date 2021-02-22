@@ -414,6 +414,11 @@ func (s *jwtToken) UpdateUserCache(ctx context.Context, jwtAudience string, user
 	return s.SaveCache(ctx, allCache)
 }
 
+// UpdateCache .
+func (s *jwtToken) UpdateCache(ctx context.Context, allCache *JwtCache) (err error) {
+	return s.SaveCache(ctx, allCache)
+}
+
 // SaveCache .
 func (s *jwtToken) SaveCache(ctx context.Context, allCache *JwtCache) (err error) {
 	var cacheM = make(map[string]interface{})
