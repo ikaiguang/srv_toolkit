@@ -15,7 +15,7 @@ import (
 // key
 const (
 	_defaultKeyPrefix        = "srv"
-	_defaultKeyPrefixVersion = "unknown"
+	_defaultKeyPrefixVersion = "0.0.0"
 )
 
 // key
