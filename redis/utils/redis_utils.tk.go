@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/go-kratos/kratos/pkg/cache/redis"
 	"github.com/go-kratos/kratos/pkg/conf/env"
+	tkinit "github.com/ikaiguang/srv_toolkit/initialize"
 	"github.com/pkg/errors"
 	"io"
 	"sync"
@@ -13,14 +14,15 @@ import (
 
 // key
 const (
-	_defaultKeyPrefix = "srv"
+	_defaultKeyPrefix        = "srv"
+	_defaultKeyPrefixVersion = "unknown"
 )
 
 // key
 var (
-	_client    *redis.Redis
-	_keyPrefix string
-	_keyOnce   sync.Once
+	_client                 *redis.Redis
+	_cacheKeyPrefixInitOnce sync.Once
+	_cacheKeyPrefix         string
 )
 
 // Init .
@@ -57,13 +59,18 @@ func formatSec(dur time.Duration) int64 {
 
 // KeyPrefix .
 func KeyPrefix() string {
-	_keyOnce.Do(func() {
-		_keyPrefix = env.AppID
-		if _keyPrefix == "" {
-			_keyPrefix = _defaultKeyPrefix
+	_cacheKeyPrefixInitOnce.Do(func() {
+		keyPrefix := env.AppID
+		if keyPrefix == "" {
+			keyPrefix = _defaultKeyPrefix
 		}
+		keyPrefixVersion := tkinit.Version()
+		if keyPrefixVersion == "" {
+			keyPrefixVersion = _defaultKeyPrefixVersion
+		}
+		_cacheKeyPrefix = keyPrefix + ":" + keyPrefixVersion
 	})
-	return _keyPrefix
+	return _cacheKeyPrefix
 }
 
 // Key .
